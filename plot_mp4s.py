@@ -101,7 +101,7 @@ for task in tasks:
 
 #Find length of time series
 t_len = len(dsets[0])
-
+print(dsets[0][0])
 x = np.linspace(0, L, Nx)
 z = np.linspace(-15, 0, Nz)
 file = open('AverageSalt.txt', 'a+')
@@ -109,28 +109,42 @@ file = open('AverageSalt.txt', 'a+')
 #Integrate from 0-h with special method. Then h-H with plain simple EZ kekW method
 #z = H-H/Nz*i = H(1-i/Nz)
 #H>z>h => EZ method    h>z>0 => Hard method
-for filename in [h5_files[0]]:
+for filename in [h5_files[-1]]:
 	#['C'][time=0][x][z]
 	with h5py.File(filename, mode='r') as f:
-		for mz in range(175, Nz):
+		data = f['tasks']['C']
+		for mz in range(Nz):
 			z_cord = -H*(1-mz/Nz)
-			if z_cord < -h:
-				x_length = 35
-				i = math.floor(Nx*x_length/L)
-				total_salt = 0
-				for mx in range(i):
-					total_salt += f['tasks']['C'][0][mx][mz]
-				average_salt = total_salt/i
-				print(average_salt, z_cord)
+			if z_cord <-h:
+				x_length_1 = l/2
+				x_length_2 = l/2
 			else:
-				x_length = l/2-(-72*np.log((-z_cord)/h))**0.5
-				i = math.floor(Nx*x_length/L)
-				total_salt = 0
-				for mx in range(i):
-					total_salt += f['tasks']['C'][0][mx][mz]
-				average_salt = total_salt/i
-				file.write(str(average_salt) + '\n')
-				print(x_length, z_cord, average_salt)	
+				x_length_1 = l/2-(-72*np.log((-z_cord)/h))**0.5
+				x_length_2 = l/2+(-72*np.log((-z_cord)/h))**0.5
+			i_1 = math.floor(Nx*x_length_1/L)
+			i_2 = math.floor(Nx*x_length_2/L)
+			total_salt_1 = 0
+			total_salt_2 = 0
+			for mx in range(Nx):
+				if mx < i_1: 
+					total_salt_1 += data[0][mx][mz]
+				elif i_2 <= mx:
+					total_salt_2 += data[0][mx][mz]
+			file.write(str(z_cord)+' '+str(total_salt_1/i_1)+' '+str(total_salt_2/(Nx-i_2))+ '\n')
+			print(x_length_1, x_length_2, z_cord, str(total_salt_1/i_1), str(total_salt_2/(Nx-i_2)))
+		""" for mz in range(Nz): #
+			z_cord = -H*(1-mz/Nz) #
+			if z_cord <-h:
+				x_length = L-l/2
+			else:
+				x_length = l/2+(-72*np.log((-z_cord)/h))**0.5
+			i = math.floor(Nx*x_length/L)
+			total_salt = 0
+			for mx in range(i, Nx):
+				total_salt += data[0][mx][mz]
+			average_salt = total_salt/i
+			file.write(str(z_cord)+' '+str(average_salt) + '\n')
+			print(x_length, z_cord, average_salt) """	
 file.close()
 exit()
 #Plot and animate all the tasks
