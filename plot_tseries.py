@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 dt = 5e-4
 freq = 30
 
-tasks = ['energy', 'salt'] #Can add more
-task_titles = ['Total Energy', 'Total Salt']
+tasks = ['energy', 'salt', 'ked_rate'] #Can add more
+task_titles = ['Total Energy', 'Total Salt', "Energy Dissipation"]
 ylabels = ['Energy (J)', 'Salt (g)']
 
 numbers = ['Test']
@@ -33,7 +33,6 @@ for j in range(len(tasks)):
 		task_data = np.concatenate([task_data, y_data_i])
 
 	iterations = len(task_data)
-
 	total_time = dt*freq*iterations
 
 	t_data = np.linspace(0, total_time, iterations)
