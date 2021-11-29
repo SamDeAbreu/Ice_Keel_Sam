@@ -53,9 +53,9 @@ for task in tasks:
 consts = ['energy', 'salt', "ked_rate"]
 const_titles = ['Total Energy', 'Total Salt', "Energy dissipation"]
 #Constants for the plotting (keep the same as nl_strat_simulation.py)
-Nx = 640
-Nz = 320
-H = 15
+Nx = 256
+Nz = 256
+H = 30
 L = 110
 l = 70
 h = 7
@@ -66,9 +66,9 @@ def sort_h5files(h5_files, splice0, splice1):
 	temp_list2 = []
 	for filename in h5_files:
 		temp_list.append(int(filename[filename.find("_")+2:filename.find(".")]))
-	for i in range(len(h5_files)):
-		temp_list2.append(h5_files[temp_list.index(i+1)])
-	h5_files = temp_list2[splice0:splice1]
+	for i in range(splice0, splice1+1):
+		temp_list2.append(h5_files[temp_list.index(i)])
+	h5_files = temp_list2
 	return h5_files
 def read_h5files(h5_files):
 	#Dsets have size of tasks x timesteps x 2 x nx x nz
@@ -107,9 +107,8 @@ def read_h5files(h5_files):
 def animate_data(dsets):
 	#Find length of time series
 	t_len = len(dsets[0])
-	print(t_len)
 	x = np.linspace(0, L, Nx)
-	z = np.linspace(-15, 0, Nz)
+	z = np.linspace(-H, 0, Nz)
 	#Plot and animate all the tasks
 	for j in range(len(tasks)):
 
@@ -172,10 +171,11 @@ def animate_data(dsets):
 			color = 'k'
 			ticks = [-0.001, 0, 0.001]
 
-		keel = -h * np.exp(-((x-35)**2)/(2*6**2))
+		keel = np.tanh(-h * np.exp(-((x-35)**2)/(2*6**2)))
 
 		fig_j, ax_j = plt.subplots()
-		im_j = ax_j.imshow(dsets[j][0][1].transpose(), vmin=vmin, vmax=vmax, cmap=cmap, extent=(0, L, -15, 0), origin='lower', animated=True)
+		im_j = ax_j.imshow(dsets[j][0][1].transpose(), vmin=vmin, vmax=vmax, cmap=cmap, extent=(0, L, -H, 0), origin='lower', animated=True)
+		plt.fill_between(x, 0, keel, facecolor="white")
 		plt.plot(x, keel, linewidth=0.5, color=color)
 		plt.xlim(10,L-10)
 		fig_j.colorbar(im_j, label=label, orientation='horizontal', ticks=ticks)
@@ -194,11 +194,35 @@ def animate_data(dsets):
 		ani = animation.FuncAnimation(fig_j, animate, init_func=init, frames=t_len, interval=30, blit=True)
 		name = r'{0}/anim_{1}_{2}_{3}-{4}.mp4'.format(str(output_path), task_name, fileno, str(splice0), str(splice1))
 		ani.save(name) 
-def compute_avg_salt(avg_salt_time, h5_files):
-	print("Now computing average salt at t = "+str(avg_salt_time)+"s")
+def compute_froude_number(h5_file):
+	with h5py.File(h5_file, mode='r') as f:
+		h = compute_mixedlayerdepth(h5_file)
+		g = -9.8*((1022-1020)/1022)
+		i = math.floor(Nx*(l/2)/L)
+		Fr_1 = 0
+		Fr_2 = 0
+		for mx in range(Nx):
+			i_h = math.floor(-Nz*h[1][mx]/L)
+			if mx <= i:
+				Fr_1 += f['tasks']['avg_velocity_squared_prof1'][0][0][i_h]/(g*h[1][mx])**0.5
+			else:
+				Fr_2 += f['tasks']['avg_velocity_squared_prof2'][0][0][i_h]/(g*h[1][mx])**0.5
+		return (Fr_1/i, Fr_2/(Nx-i))
+def compute_mixedlayerdepth(h5_file):
+	with h5py.File(h5_file, mode='r') as f:
+		data = f['tasks']['salt_zderiv'][0]
+		posx = []
+		posz = []
+		for mx in range(Nx):
+			posx.append(mx*L/Nx)
+			i = data[mx].argmax()
+			posz.append(-H*(1-i/Nz))
+	return (posx, posz)
+def plot_avg_salt(avg_salt_time, h5_files):
+	""" print("Now computing average salt at t = "+str(avg_salt_time)+"s")
 	file = open('averageSalt_{0}_{1}.txt'.format(str(round(avg_salt_time, 2)), fileno), 'a+')
+	#Frame_number = avg_salt_time/(interval*1e-3) => File_number = Frame_number/save_max (interval=30, save_max=15)
 	file_number = round(avg_salt_time/(3e-2*15))
-	print(file_number+splice0, h5_files[file_number-1])
 	with h5py.File(h5_files[file_number-1], mode='r') as f:
 		data = f['tasks']['C'] #Open salinity data
 		for mz in range(Nz): 
@@ -221,7 +245,26 @@ def compute_avg_salt(avg_salt_time, h5_files):
 			file.write(str(z_cord)+' '+str(total_salt_1/i_1)+' '+str(total_salt_2/(Nx-i_2))+' '+str(round(avg_salt_time, 2))+ '\n')
 			if mz != 0 and Nz/mz == 2:
 				print("50% done")
-	file.close()
+	file.close() """
+	file_number = round(avg_salt_time/(3e-2*15))
+	with h5py.File(h5_files[file_number-1], mode='r') as f:
+		plt.clf()
+		plt.plot(f['tasks']['avg_salt_prof1'][0][0], np.linspace(-H, 0, Nz), label="Upstream")
+		plt.plot(f['tasks']['avg_salt_prof2'][0][0], np.linspace(-H, 0, Nz), label="Downstream")
+		plt.xlabel("Average Salinity (psu)")
+		plt.ylabel("z (m)")
+		plt.title("Average salinity vs depth")
+		plt.savefig('AverageSalinity_{0}.png'.format(str(file_number)))
+def plot_mixedlayerdepth(h5_file):
+	with h5py.File(h5_file):
+		data = compute_mixedlayerdepth(h5_file)
+		plt.clf()
+		plt.plot(data[0], data[1])
+		plt.ylim(-H,0)
+		plt.xlabel("x (m)")
+		plt.ylabel("Mixed layer depth (m)")
+		plt.title("Approximate mixed layer depth vs x")
+		plt.savefig('MixedLayerDepth_{0}_.png'.format(int(h5_file[h5_file.find("_")+2:h5_file.find(".")])))
 def animate_velocity_field():
 	#Plot and animate velocity field
 
@@ -328,6 +371,8 @@ def compute_time_series(consts, h5_files):
 
 h5_files = sort_h5files(files, splice0, splice1)
 dset = read_h5files(h5_files)
+plot_avg_salt(avg_salt_time, h5_files)
+plot_mixedlayerdepth(h5_files[0])
+print(compute_froude_number(h5_files[0]))
 #animate_data(dset)
-#compute_avg_salt(avg_salt_time, h5_files)
-compute_time_series(consts, h5_files)
+#compute_time_series(consts, h5_files)

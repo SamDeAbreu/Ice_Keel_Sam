@@ -50,7 +50,7 @@ nu = 5e-4 #m^2/s #Viscosity (momentum diffusivity)
 kappa = 1.3e-3 #cm^2/s
 mu = 5e-4 #m^2/s #Salt mass diffusivity
 m = 0.056 #C/(g/kg)
-L, H = 110, 15 #m
+L, H = 110, 30 #m
 l, h = 70, 7 #m
 
 Re = 1 / nu
@@ -63,19 +63,19 @@ eta = 1e-5 * Re * (beta * epsilon)**2
 
 #Parameters defining stratification
 scale = -1
-z0 = 10.56
+z0 = 25.56
 Delta = 1e-1
 b = 27
 
 #Save parameters
-Nx, Nz = 256, 128
+Nx, Nz = 640, 640
 dt = 5e-4 #s #For certain speeds and mixed-layer depths, you can increase this by a factor of 10 to reduce runtime
 
 sim_name = 'mixingsimTest'
 restart = 0 #Integer
 
-steps = 1000 #At 800000 steps, takes many hours to run
-save_freq = 30 #15
+steps = 1000000 #At 800000 steps, takes many hours to run
+save_freq = 35 #15
 save_max = 15
 print_freq = 1000 #Decrease this for diagnostic purposes if the code isn't working
 wall_time = 60*60*23
@@ -134,6 +134,17 @@ strat.set_scales(domain.dealias)
 strat.meta['z']['parity'] = +1
 strat['g'] = scale * np.tanh((z-z0) / Delta) + b
 
+#Profile masking
+prof1 = domain.new_field()
+prof1.set_scales(domain.dealias)
+prof1.meta['z']['parity'] = +1
+prof1['g'] = 0.5*(-np.tanh((x-l/2)/0.00125)+1)
+
+prof2 = domain.new_field()
+prof2.set_scales(domain.dealias)
+prof2.meta['z']['parity'] = +1
+prof2['g'] = 0.5*(np.tanh((x-l/2)/0.00125)+1)
+
 def dens_func(T, C):
 	return sw.dens0(C_w * C['g'], T_w * T['g'])
 	#return 1025*(0.77*(C['g'])-35) 
@@ -148,8 +159,8 @@ mixing = de.IVP(domain, variables=['u', 'w', 'C', 'p', 'f', 'ct'])
 mixing.meta['u', 'p', 'C', 'f', 'ct']['z']['parity'] = +1
 mixing.meta['w']['z']['parity'] = -1
 
-params = [Nx, Nz, delta, epsilon, mu, eta, h, U, L, H, B, T, par, S, nu, wall, scale, z0, Delta, b, strat, rho, rho0]
-param_names = ['Nx', 'Nz', 'delta', 'epsilon', 'mu', 'eta', 'h', 'U', 'L', 'H', 'B', 'T', 'par', 'S', 'nu', 'wall', 'scale', 'z0', 'Delta', 'b', 'strat', 'rho', 'rho0']
+params = [Nx, Nz, delta, epsilon, mu, eta, h, U, L, H, B, T, par, S, nu, wall, scale, z0, Delta, b, strat, rho, rho0, prof1, prof2, l]
+param_names = ['Nx', 'Nz', 'delta', 'epsilon', 'mu', 'eta', 'h', 'U', 'L', 'H', 'B', 'T', 'par', 'S', 'nu', 'wall', 'scale', 'z0', 'Delta', 'b', 'strat', 'rho', 'rho0', 'prof1', 'prof2', 'l']
 
 for param, name in zip(params, param_names):
 	mixing.parameters[name] = param
@@ -185,12 +196,13 @@ rho.original_args = rho.args = [T, C]
 
 w['g'] = 0
 p['g'] = 0
-f['g'] = sigmoid(z-gaussian_keel(x, h, l/2, 6, H), a=2*epsilon)
+f['g'] = sigmoid(z-gaussian_keel(x, h, l/2, 6, H), a=8*epsilon)
 	#The stddev is variable! We set its value in the above line -- might be worth defining a new variable for it
 #f['g'] = 0 #Use this alternative to run simulation without a keel
 u['g'] = U * (1 - f['g'])
 C['g'] = stratification(z, scale, z0, Delta, b) #* (1 - f['g']) + 5*f['g']
 ct['g'] = 0
+
 
 #Save configurations
 solver.stop_iteration = steps
@@ -202,7 +214,11 @@ analysis = solver.evaluator.add_file_handler(join(save_dir, 'data-{}-{:0>2d}'.fo
 analysis.add_system(solver.state)
 
 #Save other values
-analysis.add_task("1/(L-(-36*log((H-z)/h))**(1/2))*integ(C, 'x')", layout='g', name='average_salt')
+analysis.add_task("1/(integ(prof1, 'x'))*integ(u*prof1, 'x')", layout='g', name='avg_velocity_prof1')
+analysis.add_task("1/(integ(prof2, 'x'))*integ(u*prof2, 'x')", layout='g', name='avg_velocity_prof2')
+analysis.add_task("1/(integ(prof1*(1-f), 'x'))*integ(C*prof1*(1-f), 'x')", layout='g', name='avg_salt_prof1')
+analysis.add_task("1/(integ(prof2*(1-f), 'x'))*integ(C*prof2*(1-f), 'x')", layout='g', name='avg_salt_prof2')
+analysis.add_task("dz(C)", layout='g', name='salt_zderiv')
 analysis.add_task("integ(T - S*f, 'x', 'z')", layout='g', name='energy')
 analysis.add_task("integ((1-f)*C, 'x', 'z')", layout='g', name='salt')
 analysis.add_task("q", layout='g', name='vorticity')
@@ -232,7 +248,6 @@ parameters.add_task('q')
 #Main loop
 start_time = time.time()
 while solver.proceed:
-
 	if solver.iteration % print_freq == 0:
 		maxspeed = u['g'].max()
 		logger.info('{:0>6d}, u max {:f}, dt {:.5f}, time {:.2f}, sim time {:.5f}'.format(solver.iteration, maxspeed, dt, (time.time()-start_time)/60, dt*solver.iteration))

@@ -11,8 +11,8 @@ dt = 5e-4
 freq = 30
 
 tasks = ['energy', 'salt', 'ked_rate'] #Can add more
-task_titles = ['Total Energy', 'Total Salt', "Energy Dissipation"]
-ylabels = ['Energy (J)', 'Salt (g)']
+task_titles = ['Total Energy', 'Total Salt', "Energy Dissipation vs time"]
+ylabels = ['Energy (J)', 'Salt (g)', 'Energy Dissipation (J/s)']
 
 numbers = ['Test']
 	#Modify as needed
