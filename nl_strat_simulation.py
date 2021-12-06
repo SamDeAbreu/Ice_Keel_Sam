@@ -41,17 +41,17 @@ def stratification(z, scale, z0, Delta, b):
 ################################
 
 #Dimensional parameters
-U = 0.03 #m/s
+U = 0.4 #m/s
 T_w = 1 #C
 c_p = 4.2 #J/gC
 L_T = 3.342 #J/g
 C_w = 1 #g/kg
-nu = 5e-4 #m^2/s #Viscosity (momentum diffusivity)
+nu = 5e-5 #m^2/s #Viscosity (momentum diffusivity)
 kappa = 1.3e-3 #cm^2/s
-mu = 5e-4 #m^2/s #Salt mass diffusivity
+mu = 5e-5 #m^2/s #Salt mass diffusivity
 m = 0.056 #C/(g/kg)
 L, H = 110, 30 #m
-l, h = 70, 7 #m
+l, h = 70, 15 #m
 
 Re = 1 / nu
 Sc = nu / mu #Should be close to 1
@@ -62,20 +62,20 @@ beta = 4/2.648228 #Not optimized
 eta = 1e-5 * Re * (beta * epsilon)**2
 
 #Parameters defining stratification
-scale = -1
-z0 = 25.56
+scale = -14
+z0 = 22.56
 Delta = 1e-1
-b = 27
+b = 16
 
 #Save parameters
-Nx, Nz = 640, 640
+Nx, Nz = 256, 256
 dt = 5e-4 #s #For certain speeds and mixed-layer depths, you can increase this by a factor of 10 to reduce runtime
 
-sim_name = 'mixingsimTest'
+sim_name = 'mixingsim-Test'
 restart = 0 #Integer
 
-steps = 1000000 #At 800000 steps, takes many hours to run
-save_freq = 35 #15
+steps = 10000 #At 800000 steps, takes many hours to run
+save_freq = 45 #15
 save_max = 15
 print_freq = 1000 #Decrease this for diagnostic purposes if the code isn't working
 wall_time = 60*60*23
@@ -159,8 +159,8 @@ mixing = de.IVP(domain, variables=['u', 'w', 'C', 'p', 'f', 'ct'])
 mixing.meta['u', 'p', 'C', 'f', 'ct']['z']['parity'] = +1
 mixing.meta['w']['z']['parity'] = -1
 
-params = [Nx, Nz, delta, epsilon, mu, eta, h, U, L, H, B, T, par, S, nu, wall, scale, z0, Delta, b, strat, rho, rho0, prof1, prof2, l]
-param_names = ['Nx', 'Nz', 'delta', 'epsilon', 'mu', 'eta', 'h', 'U', 'L', 'H', 'B', 'T', 'par', 'S', 'nu', 'wall', 'scale', 'z0', 'Delta', 'b', 'strat', 'rho', 'rho0', 'prof1', 'prof2', 'l']
+params = [Nx, Nz, delta, epsilon, mu, eta, h, U, L, H, B, T, par, S, nu, wall, scale, z0, Delta, b, strat, rho, rho0, prof1, prof2, l, prof3, prof2salt]
+param_names = ['Nx', 'Nz', 'delta', 'epsilon', 'mu', 'eta', 'h', 'U', 'L', 'H', 'B', 'T', 'par', 'S', 'nu', 'wall', 'scale', 'z0', 'Delta', 'b', 'strat', 'rho', 'rho0', 'prof1', 'prof2', 'l', 'prof3', 'prof2salt']
 
 for param, name in zip(params, param_names):
 	mixing.parameters[name] = param
@@ -214,8 +214,6 @@ analysis = solver.evaluator.add_file_handler(join(save_dir, 'data-{}-{:0>2d}'.fo
 analysis.add_system(solver.state)
 
 #Save other values
-analysis.add_task("1/(integ(prof1, 'x'))*integ(u*prof1, 'x')", layout='g', name='avg_velocity_prof1')
-analysis.add_task("1/(integ(prof2, 'x'))*integ(u*prof2, 'x')", layout='g', name='avg_velocity_prof2')
 analysis.add_task("1/(integ(prof1*(1-f), 'x'))*integ(C*prof1*(1-f), 'x')", layout='g', name='avg_salt_prof1')
 analysis.add_task("1/(integ(prof2*(1-f), 'x'))*integ(C*prof2*(1-f), 'x')", layout='g', name='avg_salt_prof2')
 analysis.add_task("dz(C)", layout='g', name='salt_zderiv')
