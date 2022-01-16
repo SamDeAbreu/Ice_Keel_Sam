@@ -5,12 +5,13 @@ Mixing simulation with nonlinear initial stratification
 
 Can be run in parallel (x40)
 '''
-
+import Constants as CON
 import dedalus
 import dedalus.public as de
 from dedalus.extras import flow_tools, plot_tools
 from dedalus.tools import post
 from dedalus.core.operators import GeneralFunction
+
 
 import numpy as np
 import time
@@ -41,43 +42,43 @@ def stratification(z, scale, z0, Delta, b):
 ################################
 
 #Dimensional parameters
-U = 0.4 #m/s
-T_w = 1 #C
-c_p = 4.2 #J/gC
-L_T = 3.342 #J/g
-C_w = 1 #g/kg
-nu = 5e-5 #m^2/s #Viscosity (momentum diffusivity)
-kappa = 1.3e-3 #cm^2/s
-mu = 5e-5 #m^2/s #Salt mass diffusivity
-m = 0.056 #C/(g/kg)
-L, H = 110, 30 #m
-l, h = 70, 15 #m
+U = CON.U #m/s
+T_w = CON.T_w #C
+c_p = CON.c_p #J/gC
+L_T = CON.L_T #J/g
+C_w = CON.C_w #g/kg
+nu = CON.nu #m^2/s #Viscosity (momentum diffusivity)
+kappa = CON.kappa #cm^2/s
+mu = CON.mu #m^2/s #Salt mass diffusivity
+m = CON.m #C/(g/kg)
+L, H = CON.L, CON.H #m
+l, h = CON.l, CON.h #m
 
-Re = 1 / nu
-Sc = nu / mu #Should be close to 1
+Re = CON.Re
+Sc = CON.Sc #Should be close to 1
 S = L_T / (c_p * T_w)
-delta = 5e-3
-epsilon = 0.125 #Two gridboxes
-beta = 4/2.648228 #Not optimized
-eta = 1e-5 * Re * (beta * epsilon)**2
+delta = CON.delta
+epsilon = CON.epsilon #Two gridboxes
+beta = CON.beta #Not optimized
+eta = CON.eta
 
 #Parameters defining stratification
-scale = -14
-z0 = 22.56
-Delta = 1e-1
-b = 16
+scale = CON.scale
+z0 = CON.z0
+Delta = CON.Delta
+b = CON.b
 
 #Save parameters
-Nx, Nz = 256, 256
+Nx, Nz = CON.Nx, CON.Nz
 dt = 5e-4 #s #For certain speeds and mixed-layer depths, you can increase this by a factor of 10 to reduce runtime
 
 sim_name = 'mixingsim-Test'
 restart = 0 #Integer
 
-steps = 10000 #At 800000 steps, takes many hours to run
+steps = 5000 #At 800000 steps, takes many hours to run
 save_freq = 45 #15
 save_max = 15
-print_freq = 1000 #Decrease this for diagnostic purposes if the code isn't working
+print_freq = 5000 #Decrease this for diagnostic purposes if the code isn't working
 wall_time = 60*60*23
 save_dir = '.'
 
@@ -95,7 +96,7 @@ kx, kz = domain.elements(0), domain.elements(1)
 wall = domain.new_field()
 wall.set_scales(domain.dealias)
 wall.meta['z']['parity'] = 1
-wall['g'] = sigmoid(-(x - 0.02*L), a=4*epsilon) + sigmoid(x - 0.98*L, a=4*epsilon)
+wall['g'] = sigmoid(-(x - 0.02*L), a=6*epsilon) + sigmoid(x - 0.98*L, a=6*epsilon)
 wall['c'] *= np.exp(-kx**2 / 5e6) #Spectral smoothing
 
 #Define GeneralFunction subclass
@@ -108,7 +109,7 @@ class ParityFunction(GeneralFunction):
 	def meta_parity(self, axis):
 		return self._parities.get(axis, 1) #Even by default
 
-rho0 = sw.dens0(0, 0)
+rho0 = sw.dens0(20, 20)
 
 T = domain.new_field()
 T.set_scales(domain.dealias)
@@ -156,11 +157,11 @@ rho = ParityFunction(domain, layout='g', func=dens_func,)
 #Mixing problem
 mixing = de.IVP(domain, variables=['u', 'w', 'C', 'p', 'f', 'ct'])
 	#p refers to gauge pressure
-mixing.meta['u', 'p', 'C', 'f', 'ct']['z']['parity'] = +1
+mixing.meta['u', 'p', 'C', 'f', 'ct']['z']['parity'] = 1
 mixing.meta['w']['z']['parity'] = -1
 
-params = [Nx, Nz, delta, epsilon, mu, eta, h, U, L, H, B, T, par, S, nu, wall, scale, z0, Delta, b, strat, rho, rho0, prof1, prof2, l, prof3, prof2salt]
-param_names = ['Nx', 'Nz', 'delta', 'epsilon', 'mu', 'eta', 'h', 'U', 'L', 'H', 'B', 'T', 'par', 'S', 'nu', 'wall', 'scale', 'z0', 'Delta', 'b', 'strat', 'rho', 'rho0', 'prof1', 'prof2', 'l', 'prof3', 'prof2salt']
+params = [Nx, Nz, delta, epsilon, mu, eta, h, U, L, H, B, T, par, S, nu, wall, scale, z0, Delta, b, strat, rho, rho0, prof1, prof2, l, Re, Sc]
+param_names = ['Nx', 'Nz', 'delta', 'epsilon', 'mu', 'eta', 'h', 'U', 'L', 'H', 'B', 'T', 'par', 'S', 'nu', 'wall', 'scale', 'z0', 'Delta', 'b', 'strat', 'rho', 'rho0', 'prof1', 'prof2', 'l', "Re", "Sc"]
 
 for param, name in zip(params, param_names):
 	mixing.parameters[name] = param
@@ -170,11 +171,11 @@ mixing.substitutions['q'] = 'dz(u) - dx(w)' #Vorticity
 mixing.add_equation('dx(u) + dz(w) = 0', condition='(nx != 0) or (nz != 0)')
 	#Eq 3e (Hester)
 mixing.add_equation('p = 0', condition='(nx == 0) and (nz == 0)')
-mixing.add_equation('dt(u) + dx(p) - nu*dz(q) = -w*q - (f/eta)*u - (wall/eta)*(u-U)')
+mixing.add_equation('dt(u) + dx(p) - (1/Re)*dz(q) = -w*q - (f/eta)*u - (wall/eta)*(u-U)')
 	#Eq 3d (Hester)
-mixing.add_equation('dt(w) + dz(p) + nu*dx(q) = u*q - (f/eta)*w + par*B - (wall/eta)*w')
+mixing.add_equation('dt(w) + dz(p) + (1/Re)*dx(q) = u*q - (f/eta)*w + par*B - (wall/eta)*w')
 	#Eq 3d (Hester)
-mixing.add_equation('dt(C) - mu*(dx(dx(C)) + dz(dz(C))) = -(u*dx(C) + w*dz(C)) - mu*(dx(C)*dx(f)+dz(C)*dz(f))/(1-f+delta) - (f/eta)*(C-strat) - (wall/eta)*(C-strat)')
+mixing.add_equation('dt(C) - 1/(Re*Sc)*(dx(dx(C)) + dz(dz(C))) = -(u*dx(C) + w*dz(C)) - (dx(C)*dx(f)+dz(C)*dz(f))/((1-f+delta)*Re*Sc) - (f/eta)*(C-strat) - (wall/eta)*(C-strat)')
 	#Eq 3c (Hester)
 mixing.add_equation('dt(f) = 0')
 mixing.add_equation('dt(C) - ct = 0')

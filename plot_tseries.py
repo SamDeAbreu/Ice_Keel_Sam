@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 
 #Both of these values must match those used in the simulation
 dt = 5e-4
-freq = 30
+freq = 40
 
 tasks = ['energy', 'salt', 'ked_rate'] #Can add more
 task_titles = ['Total Energy', 'Total Salt', "Energy Dissipation vs time"]
 ylabels = ['Energy (J)', 'Salt (g)', 'Energy Dissipation (J/s)']
 
-numbers = ['Test']
+numbers = ['v04z20h5']
 	#Modify as needed
 
 for j in range(len(tasks)):

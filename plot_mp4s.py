@@ -14,6 +14,7 @@ Written by: Rosalie Cormier, August 2021
 #Can add masking of ice keel if desired
 
 ##############################
+import Constants as CON
 import sys
 import h5py
 import math
@@ -53,12 +54,13 @@ for task in tasks:
 consts = ['energy', 'salt', "ked_rate"]
 const_titles = ['Total Energy', 'Total Salt', "Energy dissipation"]
 #Constants for the plotting (keep the same as nl_strat_simulation.py)
-Nx = 640
-Nz = 640
-H = 30
-L = 110
-l = 70
-h = 5
+Nx = CON.Nx
+Nz = CON.Nz
+H = CON.H
+L = CON.L
+l = CON.l
+h = CON.h
+h_z = CON.H-20.56
 
 def sort_h5files(h5_files, splice0, splice1):
 	#Sort h5 files
@@ -117,11 +119,11 @@ def animate_data(dsets):
 
 		#Set bounds (adjust as needed) and colormaps
 		if task_name == 'u':
-			vmin, vmax = -0.5, 0.5
+			vmin, vmax = -0.005, 0.005
 			cmap = 'seismic'
 			label = 'm/s'
 			color = 'k'
-			ticks = [-0.5, -0.25, 0, 0.25, 0.5]
+			ticks = [-0.005, -0.0025, 0, 0.0025, 0.005]
 		elif task_name == 'w':
 			vmin, vmax = -0.5, 0.5
 			cmap = 'seismic'
@@ -171,11 +173,11 @@ def animate_data(dsets):
 			color = 'k'
 			ticks = [-0.001, 0, 0.001]
 
-		keel = -h * np.exp(-((x-35)**2)/(2*6**2))
+		keel = -h * np.exp(-((x-l/2)**2)/(2*6**2))
 
 		fig_j, ax_j = plt.subplots()
 		im_j = ax_j.imshow(dsets[j][0][1].transpose(), vmin=vmin, vmax=vmax, cmap=cmap, extent=(0, L, -H, 0), origin='lower', animated=True)
-		plt.fill_between(x, 0, keel, facecolor="white")
+		#plt.fill_between(x, 0, keel, facecolor="white")
 		plt.plot(x, keel, linewidth=0.5, color=color)
 		plt.xlim(10,L-10)
 		fig_j.colorbar(im_j, label=label, orientation='horizontal', ticks=ticks)
@@ -199,7 +201,7 @@ def compute_froude_number(h5_file):
 		h_data = compute_mixedlayerdepth(h5_file)
 		g = -9.8*((1022-1020)/1020)
 		i_1 = math.floor(Nx*(l/2-6)/L)
-		i_2 = math.floor(Nx*(l/2+6)/L)
+		i_2 = math.floor(Nx*(l/2+6*3)/L)
 		Fr_1 = 0
 		Fr_2 = 0
 		Fr_3 = 0
@@ -207,11 +209,11 @@ def compute_froude_number(h5_file):
 			i_h = math.floor(-Nz*h_data[1][mx]/L)
 			h_d = h_data[1][mx]+h * np.exp(-((np.linspace(0,L,Nx)[mx]-35)**2)/(2*6**2))
 			if mx <= i_1:
-				Fr_1 += f['tasks']['u'][0][mx][i_h]/(g*h_d)**0.5
+				Fr_1 += (f['tasks']['u'][0][mx][i_h]**2+f['tasks']['w'][0][mx][i_h]**2)**0.5/(g*h_d)**0.5
 			elif i_1 < mx <= i_2:
-				Fr_2 += f['tasks']['u'][0][mx][i_h]/(g*h_d)**0.5
+				Fr_2 += (f['tasks']['u'][0][mx][i_h]**2+f['tasks']['w'][0][mx][i_h]**2)**0.5/(g*h_d)**0.5
 			else:
-				Fr_3 += f['tasks']['u'][0][mx][i_h]/(g*h_d)**0.5
+				Fr_3 += (f['tasks']['u'][0][mx][i_h]**2+f['tasks']['w'][0][mx][i_h]**2)**0.5/(g*h_d)**0.5
 		
 		return (Fr_1/i_1, Fr_2/(i_2-i_1), Fr_3/(Nx-i_2))
 def compute_mixedlayerdepth(h5_file):
@@ -229,7 +231,7 @@ def plot_avg_salt(avg_salt_time, h5_files):
 	with h5py.File(h5_files[file_number-1], mode='r') as f:
 		plt.clf()
 		z = np.linspace(-H, 0, Nz)
-		plt.plot(-1 * np.tanh((z+(H-20.56)) / 1e-1) + 27, z, label="Initial")
+		plt.plot(-1 * np.tanh((z+(h_z)) / 1e-1) + 27, z, label="Initial")
 		plt.plot(f['tasks']['avg_salt_prof1'][0][0], z, label="Upstream")
 		plt.plot(f['tasks']['avg_salt_prof2'][0][0], z, label="Downstream")
 		plt.xlabel("Average Salinity (psu)")
@@ -355,8 +357,8 @@ def compute_time_series(consts, h5_files):
 
 h5_files = sort_h5files(files, splice0, splice1)
 dset = read_h5files(h5_files)
-plot_avg_salt(avg_salt_time, h5_files)
-plot_mixedlayerdepth(h5_files[-1])
+#plot_avg_salt(avg_salt_time, h5_files)
+#plot_mixedlayerdepth(h5_files[-1])
 print(compute_froude_number(h5_files[-1]))
 animate_data(dset)
 #compute_time_series(consts, h5_files)
