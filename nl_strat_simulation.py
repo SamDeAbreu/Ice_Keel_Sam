@@ -70,17 +70,17 @@ b = CON.b
 
 #Save parameters
 Nx, Nz = CON.Nx, CON.Nz
-dt = 5e-4 #s #For certain speeds and mixed-layer depths, you can increase this by a factor of 10 to reduce runtime
+dt = CON.dt #s #For certain speeds and mixed-layer depths, you can increase this by a factor of 10 to reduce runtime
 
-sim_name = 'mixingsim-Test'
-restart = 0 #Integer
+sim_name = CON.sim_name
+restart = CON.restart #Integer
 
-steps = 5000 #At 800000 steps, takes many hours to run
-save_freq = 45 #15
-save_max = 15
-print_freq = 5000 #Decrease this for diagnostic purposes if the code isn't working
-wall_time = 60*60*23
-save_dir = '.'
+steps = CON.steps #At 800000 steps, takes many hours to run
+save_freq = CON.save_freq #15
+save_max = CON.save_max
+print_freq = CON.print_freq #Decrease this for diagnostic purposes if the code isn't working
+wall_time = CON.wall_time
+save_dir = CON.save_dir
 
 ###################################
 
@@ -109,7 +109,7 @@ class ParityFunction(GeneralFunction):
 	def meta_parity(self, axis):
 		return self._parities.get(axis, 1) #Even by default
 
-rho0 = sw.dens0(20, 20)
+rho0 = sw.dens0(0, 0)
 
 T = domain.new_field()
 T.set_scales(domain.dealias)
@@ -146,6 +146,11 @@ prof2.set_scales(domain.dealias)
 prof2.meta['z']['parity'] = +1
 prof2['g'] = 0.5*(np.tanh((x-l/2)/0.00125)+1)
 
+keel_mask = domain.new_field()
+keel_mask.set_scales(domain.dealias)
+keel_mask.meta['z']['parity'] = +1
+keel_mask['g'] = sigmoid(z-gaussian_keel(x, h+4.4, l/2, 6, H), a=8*epsilon)
+
 def dens_func(T, C):
 	return sw.dens0(C_w * C['g'], T_w * T['g'])
 	#return 1025*(0.77*(C['g'])-35) 
@@ -160,8 +165,8 @@ mixing = de.IVP(domain, variables=['u', 'w', 'C', 'p', 'f', 'ct'])
 mixing.meta['u', 'p', 'C', 'f', 'ct']['z']['parity'] = 1
 mixing.meta['w']['z']['parity'] = -1
 
-params = [Nx, Nz, delta, epsilon, mu, eta, h, U, L, H, B, T, par, S, nu, wall, scale, z0, Delta, b, strat, rho, rho0, prof1, prof2, l, Re, Sc]
-param_names = ['Nx', 'Nz', 'delta', 'epsilon', 'mu', 'eta', 'h', 'U', 'L', 'H', 'B', 'T', 'par', 'S', 'nu', 'wall', 'scale', 'z0', 'Delta', 'b', 'strat', 'rho', 'rho0', 'prof1', 'prof2', 'l', "Re", "Sc"]
+params = [Nx, Nz, delta, epsilon, mu, eta, h, U, L, H, B, T, par, S, nu, wall, scale, z0, Delta, b, strat, rho, rho0, prof1, prof2, l, keel_mask]
+param_names = ['Nx', 'Nz', 'delta', 'epsilon', 'mu', 'eta', 'h', 'U', 'L', 'H', 'B', 'T', 'par', 'S', 'nu', 'wall', 'scale', 'z0', 'Delta', 'b', 'strat', 'rho', 'rho0', 'prof1', 'prof2', 'l', "keel_mask"]
 
 for param, name in zip(params, param_names):
 	mixing.parameters[name] = param
@@ -171,11 +176,11 @@ mixing.substitutions['q'] = 'dz(u) - dx(w)' #Vorticity
 mixing.add_equation('dx(u) + dz(w) = 0', condition='(nx != 0) or (nz != 0)')
 	#Eq 3e (Hester)
 mixing.add_equation('p = 0', condition='(nx == 0) and (nz == 0)')
-mixing.add_equation('dt(u) + dx(p) - (1/Re)*dz(q) = -w*q - (f/eta)*u - (wall/eta)*(u-U)')
+mixing.add_equation('dt(u) + dx(p) - nu*dz(q) = -w*q - (f/eta)*u - (wall/eta)*(u-U)')
 	#Eq 3d (Hester)
-mixing.add_equation('dt(w) + dz(p) + (1/Re)*dx(q) = u*q - (f/eta)*w + par*B - (wall/eta)*w')
+mixing.add_equation('dt(w) + dz(p) + nu*dx(q) = u*q - (f/eta)*w + par*B - (wall/eta)*w')
 	#Eq 3d (Hester)
-mixing.add_equation('dt(C) - 1/(Re*Sc)*(dx(dx(C)) + dz(dz(C))) = -(u*dx(C) + w*dz(C)) - (dx(C)*dx(f)+dz(C)*dz(f))/((1-f+delta)*Re*Sc) - (f/eta)*(C-strat) - (wall/eta)*(C-strat)')
+mixing.add_equation('dt(C) - mu*(dx(dx(C)) + dz(dz(C))) = -(u*dx(C) + w*dz(C)) - mu*(dx(C)*dx(f)+dz(C)*dz(f))/(1-f+delta) - (f/eta)*(C-strat) - (wall/eta)*(C-strat)')
 	#Eq 3c (Hester)
 mixing.add_equation('dt(f) = 0')
 mixing.add_equation('dt(C) - ct = 0')
@@ -215,11 +220,12 @@ analysis = solver.evaluator.add_file_handler(join(save_dir, 'data-{}-{:0>2d}'.fo
 analysis.add_system(solver.state)
 
 #Save other values
-analysis.add_task("1/(integ(prof1*(1-f), 'x'))*integ(C*prof1*(1-f), 'x')", layout='g', name='avg_salt_prof1')
-analysis.add_task("1/(integ(prof2*(1-f), 'x'))*integ(C*prof2*(1-f), 'x')", layout='g', name='avg_salt_prof2')
-analysis.add_task("dz(C)", layout='g', name='salt_zderiv')
-analysis.add_task("integ(T - S*f, 'x', 'z')", layout='g', name='energy')
-analysis.add_task("integ((1-f)*C, 'x', 'z')", layout='g', name='salt')
+analysis.add_task("rho", layout='g', name='rho')
+analysis.add_task("1/(integ(prof1*(1-keel_mask), 'x'))*integ(C*prof1*(1-keel_mask), 'x')", layout='g', name='avg_salt_prof1')
+analysis.add_task("1/(integ(prof2*(1-keel_mask), 'x'))*integ(C*prof2*(1-keel_mask), 'x')", layout='g', name='avg_salt_prof2')
+analysis.add_task("dz(C)*(1-keel_mask)", layout='g', name='salt_zderiv')
+analysis.add_task("integ(T - S*keel_mask, 'x', 'z')", layout='g', name='energy')
+analysis.add_task("integ((1-keel_mask)*C, 'x', 'z')", layout='g', name='salt')
 analysis.add_task("q", layout='g', name='vorticity')
 #analysis.add_task("B", layout='g', name='B')
 analysis.add_task("integ(2*(nu/rho)*((dx(u))**2+(dz(u))**2+(dx(w))**2+(dz(w))**2), 'x', 'z')", layout='g', name='ked_rate')
