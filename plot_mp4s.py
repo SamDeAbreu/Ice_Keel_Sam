@@ -65,17 +65,17 @@ Nz = CON.Nz
 H = CON.H
 L = CON.L
 l = CON.l
-h = CON.h
+h = CON.h+4
 z0 = CON.z0
 h_z = CON.H-z0
 sigma = 6
 
-xbasis = de.Fourier('x', 640, interval=(0, L), dealias=3/2)
-zbasis = de.SinCos('z', 640, interval=(0, H), dealias=3/2)
+xbasis = de.Chebyshev('x', 640, interval=(0, L))
+zbasis = de.Chebyshev('z', 640, interval=(0, H))
 domain = de.Domain([xbasis, zbasis], grid_dtype=np.float64)
 
 x, z = domain.grids()
-
+wall_mask = 0.5*(np.tanh((x-10)/0.025)+1)-0.5*(np.tanh((x-100)/0.025)+1)
 
 def sort_h5files(h5_files, splice0, splice1):
 	#Sort h5 files
@@ -385,6 +385,8 @@ def compute_time_series(consts, h5_files):
 def sort_rho_z(h5_file):
 	with h5py.File(h5_file, mode='r') as f:
 		rho = f['tasks']['rho'][0]
+		print(f['tasks']['rho'].dims[0]['sim_time'][:])
+		print(f['tasks']['rho'].dims[2][0][:])
 		#z_sort alg: 
 		# 1) Sort density values and use the same indices to sort a list A=[0,1,2,...]
 		# 2) Create a new B=[0,1,2,...] list parallel to the new sorted density values (new z location of sorted density values)
@@ -394,49 +396,50 @@ def sort_rho_z(h5_file):
 		top_sort = np.sort(rho.flatten()) 
 		bot_sort = np.arange(Nx*Nz)[ind] 		
 		ind2 = np.argsort(bot_sort)
-		z_sort = -H*(np.reshape(np.arange(Nx*Nz)[ind2]//Nz, (Nx,Nz)))/Nz
-		rho_sort = np.reshape(np.sort(rho.flatten()), (Nx,Nz))
-	return rho_sort, z_sort
+		#Sorted such that (0,-H) is (0,0). Done this way so the magnitude of height for something at a deeper depth is smaller
+		#Essentially measuring height from the bottom of the domain
+		z_sort_height = H*(Nz-np.reshape(np.arange(Nx*Nz)[ind2]//Nz, (Nx,Nz)))/Nz
+		rho_sort = np.reshape(-np.sort(-rho.flatten()), (Nx,Nz), order='F')
+	return rho_sort, z_sort_height
 def compute_potential_energies(h5_file):
 	rho_ref, z_ref = sort_rho_z(h5_file)
 	with h5py.File(h5_file, mode='r') as f:
 		integrand = domain.new_field()
-		integrand.meta['z']['parity'] = -1
 		integrand2 = domain.new_field()
-		integrand2.meta['z']['parity'] = -1
 		integrand3 = domain.new_field()
-		integrand3.meta['z']['parity'] = -1
-		integrand['g'] = -9.8*f['tasks']['rho'][0]*z_ref
+		
+		integrand['g'] = 9.8*f['tasks']['rho'][0]*z_ref*wall_mask
 		E_b = de.operators.integrate(integrand, 'x', 'z')
-		integrand2['g'] = 9.8*f['tasks']['rho'][0]*(z+z_ref)
+
+		integrand2['g'] = 9.8*f['tasks']['rho'][0]*(z-z_ref)*wall_mask
 		E_a = de.operators.integrate(integrand2, 'x', 'z')
-		integrand3['g'] = 9.8*f['tasks']['rho'][0]*z
+
+		integrand3['g'] = 9.8*f['tasks']['rho'][0]*z*wall_mask
 		E_p = de.operators.integrate(integrand3, 'x', 'z')
+		
 		return E_b.evaluate()['g'][0][0], E_a.evaluate()['g'][0][0],E_b.evaluate()['g'][0][0]+E_a.evaluate()['g'][0][0], E_p.evaluate()['g'][0][0]
 def compute_Eb_t(h5_file):
 	rho_ref, z_ref = sort_rho_z(h5_file)
 	with h5py.File(h5_file, mode='r') as f:
-		integrand = domain.new_field()
-		integrand.meta['z']['parity'] = -1
 		diff = domain.new_field()
-		diff.meta['z']['parity'] = +1
-		diff['g'] = z_ref
-		diff2 = domain.new_field()
-		diff2.meta['z']['parity'] = +1
-		diff2['g'] = f['tasks']['rho'][0]
-		deriv2 = de.operators.differentiate(diff2, 'z')
-		deriv = de.operators.differentiate(diff, 'z')
-		print(deriv.evaluate()['g'][2]/deriv2.evaluate()['g'][2])
-		integrand['g'] = -9.8*f['tasks']['energy_back_quant'][0]*z_ref
+		diff['g'] = rho_ref
+		result = diff.differentiate('z')['g']
+		#print(f['tasks']['rho'][0][20])
+		#print(z_ref[20])
+		#print(diff.differentiate('z')['g'][400])
+		
+		integrand = domain.new_field()
+		integrand['g'] = 9.8*f['tasks']['nabla_rho_sq'][0]/diff['g']*wall_mask
+		
 		E_b_t = de.operators.integrate(integrand, 'x', 'z')
+		
 		return E_b_t.evaluate()['g'][0][0]
 h5_files = sort_h5files(files, splice0, splice1)
 dset = read_h5files(h5_files)
-print(compute_potential_energies(h5_files[-1]))
-print(compute_Eb_t(h5_files[-1]))
-#sort_rho_z(h5_files[-1])
+#print(compute_potential_energies(h5_files[-1]))
+#print(compute_Eb_t(h5_files[-1]))
 #plot_avg_salt(avg_salt_time, h5_files)
 #plot_mixedlayerdepth(h5_files[-1])
 #print(compute_froude_number(h5_files[-1]))
-#animate_data(dset)
+animate_data(dset)
 #compute_time_series(consts, h5_files)
