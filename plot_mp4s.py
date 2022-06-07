@@ -51,7 +51,7 @@ output_path = pathlib.Path(args['--output']).absolute()
 
 #Space-dependent variables that can be accessed directly - there are others not included here
 tasks_legend = ['u', 'w', 'C', 'vorticity', 'dsfx', 'dsfz', 'f']
-task_titles_legend = ['x-Velocity', 'z-Velocity', 'Salinity', 'Vorticity ($\hat{y}$)', 'Diffusive Salinity Flux, x-Component', 'Diffusive Salinity Flux, z-Component', 'Keel mask']
+task_titles_legend = ['x-Velocity', 'z-Velocity', 'Salinity ($h/z_0={0}$, $U/\\sqrt{{z_0g^\\prime}}$=${1}$)'.format(CON.a, CON.c), 'Vorticity ($\hat{y}$)', 'Diffusive Salinity Flux, x-Component', 'Diffusive Salinity Flux, z-Component', 'Keel mask']
 tasks = specific_task.split(",")
 task_titles = []
 for task in tasks:
@@ -65,13 +65,13 @@ Nz = CON.Nz
 H = CON.H
 L = CON.L
 l = CON.l
-h = CON.h+4
+h = CON.h
 z0 = CON.z0
 h_z = CON.H-z0
-sigma = 6
+sigma = CON.sigma
 
-xbasis = de.Chebyshev('x', 640, interval=(0, L))
-zbasis = de.Chebyshev('z', 640, interval=(0, H))
+xbasis = de.Chebyshev('x', Nx, interval=(0, L))
+zbasis = de.Chebyshev('z', Nz, interval=(0, H))
 domain = de.Domain([xbasis, zbasis], grid_dtype=np.float64)
 
 x, z = domain.grids()
@@ -146,11 +146,11 @@ def animate_data(dsets):
 			color = 'k'
 			ticks = [-0.5, -0.25, 0, 0.25, 0.5]
 		elif task_name == 'C':
-			vmin, vmax = 25.5, 28.5
+			vmin, vmax = 27.5, 30.5
 			cmap = 'viridis'
 			label = 'psu'
 			color = 'k'
-			ticks = [26, 27, 28]
+			ticks = [28, 29, 30]
 		elif task_name == 'p':
 			vmin, vmax = 0, 300
 			cmap = 'viridis'
@@ -169,7 +169,7 @@ def animate_data(dsets):
 			label = 'psu/s'
 			color = 'k'
 			ticks = [-2, -1, 0, 1, 2]
-		elif task_name == 'q':
+		elif task_name == 'vorticity':
 			vmin, vmax = -2, 2
 			cmap = 'PuOr'
 			label = 's$^{-1}$'
@@ -188,20 +188,20 @@ def animate_data(dsets):
 			color = 'k'
 			ticks = [-0.001, 0, 0.001]
 
-		keel = -(h) * np.exp(-((x-l/2)**2)/(2*6**2))-4
+		#keel = -(h) * np.exp(-((x-l/2)**2)/(2*6**2))
+		keel = -h*sigma**2/(sigma**2+4*(x-l)**2)
 
-		fig_j, ax_j = plt.subplots()
-		im_j = ax_j.imshow(dsets[j][0][1].transpose(), vmin=vmin, vmax=vmax, cmap=cmap, extent=(0, L, -H, 0), origin='lower', animated=True)
-		#plt.fill_between(x, 0, keel, facecolor="white")
-		plt.plot(x, keel, linewidth=0.5, color=color)
-		plt.axvline(x=l/2-sigma)
-		plt.axvline(x=l/2+sigma*2)
-		plt.text(15, 27, "Region 1", color='black')
-		plt.xlim(10,L-10)
+		fig_j, ax_j = plt.subplots(figsize=(8,8))
+		im_j = ax_j.imshow(dsets[j][0][1].transpose(), vmin=vmin, vmax=vmax, cmap=cmap, extent=(0, L/(H-z0), -H/(H-z0), 0), origin='lower', animated=True)
+		#plt.axvline(x=l/2)
+		#plt.axvline(x=l/2+sigma)
+		plt.fill_between(x/(H-z0), 0, keel/(H-z0), facecolor="white")
+		plt.plot(x/(H-z0), keel/(H-z0), linewidth=0.5, color=color)
+		#plt.xlim(2, plt.xlim()[1]-2)
 		fig_j.colorbar(im_j, label=label, orientation='horizontal', ticks=ticks)
-		ax_j.set_title(task_title)
-		ax_j.set_xlabel('x (m)')
-		ax_j.set_ylabel('z (m)')
+		ax_j.set_title(task_title+' Time: {0}s-{1}s'.format(int(splice0*CON.save_freq*CON.save_max*CON.dt), int(splice1*CON.save_freq*CON.save_max*CON.dt)))
+		ax_j.set_xlabel('$x/z_0$')
+		ax_j.set_ylabel('$z/z_0$')
 		plt.tight_layout()
 
 		def init():
@@ -217,9 +217,10 @@ def animate_data(dsets):
 def compute_froude_number(h5_file):
 	with h5py.File(h5_file, mode='r') as f:
 		h_data = compute_mixedlayerdepth(h5_file)
-		g = -9.8*((1022-1020)/1020)
-		i_1 = math.floor(Nx*(l/2-sigma)/L)
-		i_2 = math.floor(Nx*(l/2+sigma*2)/L)
+		g = 9.8*((1022-1020)/1020)
+		i_1 = math.floor(Nx*(l/2)/L)
+		i_2 = math.floor(Nx*(l/2+sigma)/L)
+		i_3 = math.floor(Nx*(l/2+2*sigma)/L)
 		Fr_1 = 0
 		Fr_2 = 0
 		Fr_3 = 0
@@ -227,57 +228,58 @@ def compute_froude_number(h5_file):
 			#i_h = math.floor(-Nz*h_data[1][mx]/L)
 			i_h = h_data[0][mx]
 			h_d = h_data[1][mx]+h * np.exp(-((np.linspace(0,L,Nx)[mx]-l/2)**2)/(2*6**2))
-			print(h_d)
 			if mx <= i_1:
-				Fr_1 += (f['tasks']['u'][0][mx][i_h]**2)**0.5/(g*h_d)**0.5
+				Fr_1 += (f['tasks']['u'][0][mx][i_h]**2)**0.5/(g*abs(h_d))**0.5
 			elif i_1 < mx <= i_2:
-				Fr_2 += (f['tasks']['u'][0][mx][i_h]**2)**0.5/(g*h_d)**0.5
-			else:
-				Fr_3 += (f['tasks']['u'][0][mx][i_h]**2)**0.5/(g*h_d)**0.5
-		print(i_1, i_2-i_1, Nx-i_2)
-		return (Fr_1/i_1, Fr_2/(i_2-i_1), Fr_3/(Nx-i_2))
+				Fr_2 += (f['tasks']['u'][0][mx][i_h]**2)**0.5/(g*abs(h_d))**0.5
+			elif i_2 < mx <= i_3:
+				Fr_3 += (f['tasks']['u'][0][mx][i_h]**2)**0.5/(g*abs(h_d))**0.5
+		return (Fr_1/i_1, Fr_2/(i_2-i_1), Fr_3/(i_3-i_2))
 def compute_mixedlayerdepth(h5_file):
+	#Creates file for ML
+	file = open('MLD_{0}.txt'.format(fileno), 'a+')
 	with h5py.File(h5_file, mode='r') as f:
-		data = f['tasks']['salt_zderiv'][0]
+		data = f['tasks']['rho'][0]
 		indz = []
 		posz = []
 		posx = []
+		x = np.linspace(0, L, Nx)
 		for mx in range(Nx):
-			#posx.append(mx*L/Nx)
-			i = data[mx].argmax()
-			indz.append(i)
 			posx.append(mx*L/Nx)
-			#print("Test value: "+str(-H*(1-i/Nz))+" at x = "+str(mx*L/Nx))
-			while -H*(1-i/Nz) +h * np.exp(-((np.linspace(0,L,Nx)[mx]-l/2)**2)/(2*6**2)) >= 0:
-			#	print("Finding new: "+str(i)+" "+str(-H*(1-i/Nz)))
-				i = data[mx][:i].argmax()
-			#print("Final value: "+str(-H*(1-i/Nz)))
+			rho_min = data[mx][-1]
+			diff = data[mx] - rho_min
+			i = min(np.argwhere(diff <= 0.1))[0]
 			posz.append(-H*(1-i/Nz))
+			indz.append(i)
+			file.write(str(-H*(1-i/Nz))+"\n")
+	file.close()
 	return (indz, posz, posx)
 def plot_avg_salt(avg_salt_time, h5_files):
 	file_number = round(avg_salt_time/(3e-2*15))
 	with h5py.File(h5_files[file_number-1], mode='r') as f:
 		plt.clf()
 		z = np.linspace(-H, 0, Nz)
-		plt.plot(-1 * np.tanh((z+(h_z)) / 1e-1) + 27, z, label="Initial")
+		plt.plot(-1 * np.tanh((z+(h_z)) / 1e-1) + 29, z, label="Initial")
 		plt.plot(f['tasks']['avg_salt_prof1'][0][0], z, label="Upstream")
 		plt.plot(f['tasks']['avg_salt_prof2'][0][0], z, label="Downstream")
 		plt.xlabel("Average Salinity (psu)")
 		plt.ylabel("z (m)")
 		plt.legend()
-		plt.title("Average salinity vs depth")
+		plt.title("Average salinity vs depth ($h={0}$m, $U={1}$m/s)".format(h, CON.U))
 		plt.savefig('AverageSalinity_{0}.png'.format(str(file_number)))
 def plot_mixedlayerdepth(h5_file):
 	with h5py.File(h5_file):
 		data = compute_mixedlayerdepth(h5_file)
 		plt.clf()
 		plt.plot(data[2], data[1], label="Mixed Layer Depth")
-		plt.plot(data[2], (z0-H+H*16/Nz)*np.ones(len(data[0])), label="Initial", marker="_")
-		plt.ylim(-H,0)
+		plt.plot(data[2], (z0-H)*np.ones(len(data[0])), label="Initial", marker="_")
+		plt.plot(data[2], -h*sigma**2/(sigma**2+4*(np.array(data[2])-l)**2), linestyle='dashed')
+		plt.ylim(-H+15,0)
+		plt.xlim(10,L-10)
 		plt.legend()
 		plt.xlabel("x (m)")
 		plt.ylabel("Mixed layer depth (m)")
-		plt.title("Approximate mixed layer depth vs x")
+		plt.title("Mixed layer depth ($h={0}$m, $U={1}$m/s)".format(h, CON.U))
 		plt.savefig('MixedLayerDepth_{0}_.png'.format(int(h5_file[h5_file.find("_")+2:h5_file.find(".")])))
 def animate_velocity_field():
 	#Plot and animate velocity field
@@ -382,43 +384,6 @@ def compute_time_series(consts, h5_files):
 		file.close()
 
 	#A separate file is used for plotting these time series
-def sort_rho_z(h5_file):
-	with h5py.File(h5_file, mode='r') as f:
-		rho = f['tasks']['rho'][0]
-		print(f['tasks']['rho'].dims[0]['sim_time'][:])
-		print(f['tasks']['rho'].dims[2][0][:])
-		#z_sort alg: 
-		# 1) Sort density values and use the same indices to sort a list A=[0,1,2,...]
-		# 2) Create a new B=[0,1,2,...] list parallel to the new sorted density values (new z location of sorted density values)
-		# 3) Sort B by the indices to sort A 
-		# 4) Compute the z-values for each index in B. Now B[mx][mz] represents the reference z value of the sorted density for a density at (mx,mz) 
-		ind = np.argsort(rho.flatten(), axis=0) 
-		top_sort = np.sort(rho.flatten()) 
-		bot_sort = np.arange(Nx*Nz)[ind] 		
-		ind2 = np.argsort(bot_sort)
-		#Sorted such that (0,-H) is (0,0). Done this way so the magnitude of height for something at a deeper depth is smaller
-		#Essentially measuring height from the bottom of the domain
-		z_sort_height = H*(Nz-np.reshape(np.arange(Nx*Nz)[ind2]//Nz, (Nx,Nz)))/Nz
-		rho_sort = np.reshape(-np.sort(-rho.flatten()), (Nx,Nz), order='F')
-	return rho_sort, z_sort_height
-def compute_potential_energies(h5_file):
-	rho_ref, z_ref = sort_rho_z(h5_file)
-	with h5py.File(h5_file, mode='r') as f:
-		integrand = domain.new_field()
-		integrand2 = domain.new_field()
-		integrand3 = domain.new_field()
-		
-		integrand['g'] = 9.8*f['tasks']['rho'][0]*z_ref*wall_mask
-		E_b = de.operators.integrate(integrand, 'x', 'z')
-
-		integrand2['g'] = 9.8*f['tasks']['rho'][0]*(z-z_ref)*wall_mask
-		E_a = de.operators.integrate(integrand2, 'x', 'z')
-
-		integrand3['g'] = 9.8*f['tasks']['rho'][0]*z*wall_mask
-		E_p = de.operators.integrate(integrand3, 'x', 'z')
-		
-		return E_b.evaluate()['g'][0][0], E_a.evaluate()['g'][0][0],E_b.evaluate()['g'][0][0]+E_a.evaluate()['g'][0][0], E_p.evaluate()['g'][0][0]
-def compute_Eb_t(h5_file):
 	rho_ref, z_ref = sort_rho_z(h5_file)
 	with h5py.File(h5_file, mode='r') as f:
 		diff = domain.new_field()
@@ -436,8 +401,6 @@ def compute_Eb_t(h5_file):
 		return E_b_t.evaluate()['g'][0][0]
 h5_files = sort_h5files(files, splice0, splice1)
 dset = read_h5files(h5_files)
-#print(compute_potential_energies(h5_files[-1]))
-#print(compute_Eb_t(h5_files[-1]))
 #plot_avg_salt(avg_salt_time, h5_files)
 #plot_mixedlayerdepth(h5_files[-1])
 #print(compute_froude_number(h5_files[-1]))

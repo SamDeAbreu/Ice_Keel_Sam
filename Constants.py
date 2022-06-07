@@ -1,4 +1,6 @@
-U = 0.4 #m/s
+import seawater as sw
+import numpy as np
+
 T_w = 1 #C
 c_p = 4.2 #J/gC
 L_T = 3.342 #J/g
@@ -7,8 +9,18 @@ nu = 5e-5 #m^2/s #Viscosity (momentum diffusivity)
 kappa = 1.3e-3 #cm^2/s
 mu = 5e-5 #m^2/s #Salt mass diffusivity
 m = 0.056 #C/(g/kg)
-L, H = 110, 34 #m
-l, h = 70, 10-4 #m
+
+#Parameters defining stratification
+scale = -1
+z0 = 90
+Delta = 1e-1
+b = 29
+
+L, H = 450, 100 #m
+a, c = 2, 2.4
+l, h = 150, a*(H-z0) #m
+sigma = 3.9*h
+U = c*np.sqrt((H-z0)*9.8*(sw.dens0(30,-2)-sw.dens0(28,-2))/sw.dens0(28,-2)) #m/s
 
 Re = 1 / nu
 Sc = nu / mu #Should be close to 1
@@ -18,22 +30,20 @@ epsilon = 0.125 #Two gridboxes
 beta = 4/2.648228 #Not optimized
 eta = 1e-5 * Re * (beta * epsilon)**2
 
-#Parameters defining stratification
-scale = -1
-z0 = 19
-Delta = 1e-1
-b = 27
+
 
 #Save parameters
-Nx, Nz = 640, 640
-dt = 5e-4 #s #For certain speeds and mixed-layer depths, you can increase this by a factor of 10 to reduce runtime
+Nx, Nz = 1280, 640
+dt = 9e-3 #s #For certain speeds and mixed-layer depths, you can increase this by a factor of 10 to reduce runtime
 
-sim_name = 'mixingsim-Test'
+sim_name = 'mixingsim-a009c003LR'
+file_handler_mode = 'overwrite'
 restart = 0 #Integer
+restart_sim = True
 
-steps = 2000 #At 800000 steps, takes many hours to run
-save_freq = 45 #15
+steps = 25000 #At 800000 steps, takes many hours to run
+save_freq = 150 #15
 save_max = 15
-print_freq = 5000 #Decrease this for diagnostic purposes if the code isn't working
+print_freq = 100 #Decrease this for diagnostic purposes if the code isn't working
 wall_time = 60*60*23
 save_dir = '.'
