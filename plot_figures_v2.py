@@ -55,7 +55,7 @@ def sort_rho_z(h5_file, domain):
 		rho_sort = np.reshape(-np.sort(-rho.flatten()), (1280, 640), order='F')
 	return rho_sort, z_sort_height
 
-plt.rcParams.update({'font.size':15})
+plt.rcParams.update({'font.size':13})
 
 x, z = domain.grids()
 #a = ['a005', 'a009', 'a102', 'a200'] #heights
@@ -63,8 +63,13 @@ x, z = domain.grids()
 sp = [[220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450]]
 a = ['a005', 'a095', 'a102', 'a200']
 c = ['c005', 'c100', 'c105', 'c200']
-labels = ['$h/z_0=0.5$', '$h/z_0=0.95$', '$h/z_0=1.2$', '$h/z_0=2.0$']
-markers = [['P', 'D', 'D', '*'], ['P', 'o', '^', '*'], ['P', 'o', '^', '*'], ['s', 'o', '^', '*']] #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
+labels_height = ['$h/z_0=0.5$', '$h/z_0=0.95$', '$h/z_0=1.2$', '$h/z_0=2.0$']
+labels_regime_up = ['Supercritical', 'Rarefaction',  'Solitons', 'Blocked']
+labels_regime_down = ['Vortex shedding', 'Stirred', 'Laminar jump', 'Blocked', 'Lee waves']
+markers_labels_up = ['d', 'D', 'o', 's']
+markers_labels_down = ['*', 'p', '^', 's', 'P']
+markers1 = [['D', 'D', 'D', 'd'], ['D', 'o', 'o', 'd'], ['D', 'o', 'o', 'd'], ['s', 'o', 'o', 'd']] #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
+markers2 = [['P', '^', '^', '*'], ['P', '^', 'p', '*'], ['P', '^', 'p', '*'], ['s', '^', 'p', '*']] #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
 titles = ["a) Vortex Shedding", "b) Solitons & Turbulent Downstream", "c) Solitons & Minimum Stirring Downstream", "d) Minimum Stirring Downstream", "e) Blocking", "f) Lee waves"]
 data = [[], [], [], []] #Height[Speeds]
 salt_data_up = [[], [], [], []] #Height[Speeds]
@@ -110,9 +115,9 @@ for i in range(len(a)):
         avgs[i]['Phi_d_U'].append(average_data(data[i][j][20]))
         avgs[i]['Phi_d_U_stdev'].append(stdev_data(data[i][j][20]))
         avgs[i]['K_p_U'].append(average_data(data[i][j][23]))
-        avgs[i]['K_p_U_stdev'].append(stdev_log_data(data[i][j][23]))
+        avgs[i]['K_p_U_stdev'].append(stdev_data(data[i][j][23]))
         avgs[i]['K_p_D'].append(average_data(data[i][j][16]))
-        avgs[i]['K_p_D_stdev'].append(stdev_log_data(data[i][j][16]))
+        avgs[i]['K_p_D_stdev'].append(stdev_data(data[i][j][16]))
         avgs[i]['K_p_D_series'].append(data[i][j][16])
         avgs[i]['K_p_U_series'].append(data[i][j][23])
         avgs[i]['time'].append(data[i][j][0])
@@ -124,9 +129,9 @@ colors1 = ['#4d94ff', '#005ce6', '#003380', '#001433']
 plt.plot(c_axis, np.ones(len(c_axis)), linestyle='dashed', color='black')
 for i in range(len(a)):
     for j in range(len(c)):
-        plt.errorbar(c_axis[j], -avgs[i]['MLD'][j]/(H-z0), yerr=avgs[i]['MLD_stdev'][j]/(H-z0), capsize=5, marker=markers[i][j], linestyle='None', color=colors1[i], label=labels[i])    
+        plt.errorbar(c_axis[j], -avgs[i]['MLD'][j]/(H-z0), yerr=avgs[i]['MLD_stdev'][j]/(H-z0), capsize=5, marker=markers2[i][j], linestyle='None', color=colors1[i], label=labels_height[i])    
         if j == len(c)-1:
-            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
+            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels_height[i])
 plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
 plt.ylabel('(Average Mixed Layer Depth)$/z_0$')
 plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
@@ -139,47 +144,57 @@ plt.savefig('MLD_figure.png', dpi=d, bbox_inches='tight')
 plt.clf()
 
 #KED Downstream
+color_lines = []
+marker_lines = []
 for i in range(len(a)):
     for j in range(len(c)):
-        plt.errorbar(c_axis[j], avgs[i]['KED_D'][j]/epsilon_0, yerr=avgs[i]['KED_D_stdev'][j]/epsilon_0, capsize=5, marker=markers[i][j], linestyle='None', color=colors1[i], label=labels[i])    
-        if j == len(c)-1:
-            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
-plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
-plt.ylabel(r'$\langle\overline{{\varepsilon_k}}\rangle/\sqrt{{\Delta B^3 z_0}}$')
+        plt.plot(c_axis[j], avgs[i]['KED_D'][j]/epsilon_0, marker=markers2[i][j], linestyle='None', color=colors1[i], label=labels_height[i])    
+        #if j == len(c)-1:
+        #    plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
+for i in range(len(a)):
+    color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+plt.plot([], [], marker='o', label=' ', color='white')
+for i in range(5):
+    marker_lines.append(plt.plot([], [], marker=markers_labels_down[i], linestyle='None', color='black', label=labels_regime_down[i]))
+handles, labels_temp = plt.gca().get_legend_handles_labels()
+by_label = dict(zip(labels_temp[::1], handles[::1]))
+plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
+plt.xlabel('Froude Number $Fr$')
+plt.ylabel(r'Downstream Dissipation Rate $\langle\overline{{\varepsilon_k}}\rangle_D/\sqrt{{\Delta B^3 z_0}}$')
 plt.ylim(0, plt.ylim()[1])
 plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
 plt.grid()
-plt.title('Downstream')
-handles, labels_temp = plt.gca().get_legend_handles_labels()
-by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True)
+
+
+
 plt.savefig('KED_Downstream_figure.png', dpi=d, bbox_inches='tight')
 plt.clf()
 
 #KED Upstream
 for i in range(len(a)):
     for j in range(len(c)):
-        plt.errorbar(c_axis[j], avgs[i]['KED_U'][j]/epsilon_0, yerr=avgs[i]['KED_U_stdev'][j]/epsilon_0, capsize=5, marker=markers[i][j], linestyle='None', color=colors1[i], label=labels[i])    
-        if j == len(c)-1:
-            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
-plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
-plt.ylabel(r'$\langle\overline{{\varepsilon_k}}\rangle/\sqrt{{\Delta B^3 z_0}}$')
+        plt.plot(c_axis[j], avgs[i]['KED_U'][j]/epsilon_0, marker=markers1[i][j], linestyle='None', color=colors1[i], label=labels_height[i])    
+plt.xlabel('Froude Number $Fr$')
+plt.ylabel(r'Upstream Dissipation Rate $\langle\overline{{\varepsilon_k}}\rangle_U/\sqrt{{\Delta B^3 z_0}}$')
 plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
 plt.grid()
 plt.ylim(0, plt.ylim()[1])
-plt.title('Upstream')
+for i in range(len(a)):
+    color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+for i in range(4):
+    marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='black', label=labels_regime_up[i]))
 handles, labels_temp = plt.gca().get_legend_handles_labels()
-by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True)
+by_label = dict(zip(labels_temp[::1], handles[::1]))
+plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
 plt.savefig('KED_Upstream_figure.png', dpi=d, bbox_inches='tight')
 plt.clf()
 
 #phi_d Upstream
 for i in range(len(a)):
     for j in range(len(c)):
-        plt.errorbar(c_axis[j], avgs[i]['Phi_d_U'][j]/epsilon_0, yerr=avgs[i]['Phi_d_U_stdev'][j]/epsilon_0, capsize=5, marker=markers[i][j], linestyle='None', color=colors1[i], label=labels[i])    
+        plt.errorbar(c_axis[j], avgs[i]['Phi_d_U'][j]/epsilon_0, yerr=avgs[i]['Phi_d_U_stdev'][j]/epsilon_0, capsize=5, marker=markers1[i][j], linestyle='None', color=colors1[i], label=labels_height[i])    
         if j == len(c)-1:
-            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
+            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels_height[i])
 plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
 plt.ylabel('$\\Phi_d/(\\sqrt{{\\Delta B^3 z_0}})$')
 plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
@@ -195,9 +210,9 @@ plt.clf()
 #phi_d Downstream
 for i in range(len(a)):
     for j in range(len(c)):
-        plt.errorbar(c_axis[j], avgs[i]['Phi_d_D'][j]/epsilon_0, yerr=avgs[i]['Phi_d_D_stdev'][j]/epsilon_0, capsize=5, linestyle='None', marker=markers[i][j], color=colors1[i], label=labels[i])    
+        plt.errorbar(c_axis[j], avgs[i]['Phi_d_D'][j]/epsilon_0, yerr=avgs[i]['Phi_d_D_stdev'][j]/epsilon_0, capsize=5, linestyle='None', marker=markers2[i][j], color=colors1[i], label=labels_height[i])    
         if j == len(c)-1:
-            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
+            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels_height[i])
 plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
 plt.ylabel('$\\Phi_d/(\\sqrt{{\\Delta B^3 z_0}})$')
 plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
@@ -213,37 +228,41 @@ plt.clf()
 #K_p Upstream
 for i in range(len(a)):
     for j in range(len(c)):
-        print('avg: '+str(avgs[i]['K_p_U_stdev'][j]/mu))
-        print(np.log10(avgs[i]['K_p_U_stdev'][j]/mu))
-        plt.errorbar(c_axis[j], np.log10(avgs[i]['K_p_U'][j]/mu), yerr=avgs[i]['K_p_U_stdev'][j]/np.log10(mu), capsize=5, marker=markers[i][j], linestyle='None', color=colors1[i], label=labels[i])    
-        if j == len(c)-1:
-            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
-plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
-plt.ylabel(r'$\log_{{10}}(\langle \overline{{K_\rho}}\rangle/\mu)$')
+        plt.plot(c_axis[j], avgs[i]['K_p_U'][j]/mu, marker=markers1[i][j], linestyle='None', color=colors1[i], label=labels_height[i])    
+plt.xlabel('Froude Number $Fr$')
+plt.ylabel(r'Upstream Diapycnal Diffusivity $\langle \overline{{K_\rho}}\rangle_U/\mu$')
 plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
 plt.grid()
-plt.ylim(0, plt.ylim()[1])
-plt.title('Upstream')
+plt.yscale('log', nonposy='clip')
+plt.ylim(plt.ylim()[0], 1e5)
+for i in range(len(a)):
+    color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+for i in range(4):
+    marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='black', label=labels_regime_up[i]))
 handles, labels_temp = plt.gca().get_legend_handles_labels()
-by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True)
+by_label = dict(zip(labels_temp[::1], handles[::1]))
+plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
 plt.savefig('Kp_Upstream_figure.png', dpi=d, bbox_inches='tight')
 plt.clf()
 
 #K_p Downstream
 for i in range(len(a)):
     for j in range(len(c)):
-        plt.errorbar(c_axis[j], np.log10(avgs[i]['K_p_D'][j]/mu), yerr=avgs[i]['K_p_D_stdev'][j]/np.log10(mu), capsize=5, linestyle='None', marker=markers[i][j], color=colors1[i], label=labels[i])    
-        if j == len(c)-1:
-            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
-plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
-plt.ylabel(r'$\log_{{10}}(\langle \overline{{K_\rho}}\rangle/\mu)$')
+        plt.plot(c_axis[j], avgs[i]['K_p_D'][j]/mu, linestyle='None', marker=markers2[i][j], color=colors1[i], label=labels_height[i])    
+plt.xlabel('Froude number $Fr$')
+plt.ylabel(r'Downstream Diapycnal Diffusivity $\langle \overline{{K_\rho}}\rangle_D/\mu$')
 plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
 plt.grid()
-plt.title('Downstream')
+plt.yscale('log')
+plt.ylim(plt.ylim()[0], 1e5)
+for i in range(len(a)):
+    color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+plt.plot([], [], marker='o', label=' ', color='white')
+for i in range(5):
+    marker_lines.append(plt.plot([], [], marker=markers_labels_down[i], linestyle='None', color='black', label=labels_regime_down[i]))
 handles, labels_temp = plt.gca().get_legend_handles_labels()
-by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True)
+by_label = dict(zip(labels_temp[::1], handles[::1]))
+plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
 plt.savefig('Kp_Downstream_figure.png', dpi=d, bbox_inches='tight')
 plt.clf()
 
@@ -280,27 +299,46 @@ by_label = dict(zip(labels_temp[::-1], handles[::-1]))
 plt.legend(by_label.values(), by_label.keys())
 plt.savefig('salt_Downstream_figure.png')
 plt.clf()"""
+colors2 = {'D': '#00b300', '^': '#0052cc', 's': '#6600cc', 'o': '#c908a6', 'P': '#ffa31a', '*': '#ff1a1a', 'p': 'black', 'd': '#800000'}
 #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
-#Regime layout
-colors2 = {'D': '#00b300', '^': '#0052cc', 's': '#6600cc', 'o': '#c908a6', 'P': '#ffa31a', '*': '#ff1a1a'}
+#Regime layout upstream
 for i in range(len(a)):
     for j in range(len(c)):
-        plt.errorbar(c_axis[j], [0.5, 0.95, 1.2, 2][i], capsize=5, linestyle='None', marker=markers[i][j], color=colors2[markers[i][j]])    
-plt.plot([], [], marker='*', linestyle='None', color=colors2['*'], label='Vortex shedding')
-plt.plot([], [], marker='^', linestyle='None', color=colors2['^'], label='Solitons & TD')
-plt.plot([], [], marker='o', linestyle='None', color=colors2['o'], label='Solitons & MSD')
-plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='MSD')
-plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocking')
+        plt.errorbar(c_axis[j], [0.5, 0.95, 1.2, 2][i], capsize=5, linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]])    
+plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocked')
+plt.plot([], [], marker='o', linestyle='None', color=colors2['o'], label='Solitons')
+plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='Rarefaction')
+plt.plot([], [], marker='d', linestyle='None', color=colors2['d'], label='Supercritical')
+plt.xlabel('Froude Number $Fr$')
+plt.ylabel('$h/z_0$')
+plt.xticks([0.5, 1, 1.5, 2])
+plt.yticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
+plt.grid()
+plt.title('Upstream')
+handles, labels_temp = plt.gca().get_legend_handles_labels()
+by_label = dict(zip(labels_temp[::-1], handles[::-1]))
+plt.legend(by_label.values(), by_label.keys(), loc='center right', bbox_to_anchor=(0.944, 0.73), prop={'size': 11}, fancybox=True, shadow=True)
+plt.savefig('regime_figure_upstream.png', dpi=d, bbox_inches='tight')
+plt.clf()
+
+#Regime layout Downstream
+for i in range(len(a)):
+    for j in range(len(c)):
+        plt.errorbar(c_axis[j], [0.5, 0.95, 1.2, 2][i], capsize=5, linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]])    
 plt.plot([], [], marker='P', linestyle='None', color=colors2['P'], label='Lee waves')
-plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
+plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocking')
+plt.plot([], [], marker='p', linestyle='None', color=colors2['p'], label='Stirred')
+plt.plot([], [], marker='^', linestyle='None', color=colors2['^'], label='Laminar jump')
+plt.plot([], [], marker='*', linestyle='None', color=colors2['*'], label='Vortex shedding')
+plt.xlabel('Froude Number $Fr$')
 plt.ylabel('$h/z_0$')
 plt.xticks([0.5, 1, 1.5, 2])
 plt.yticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
 plt.grid()
 handles, labels_temp = plt.gca().get_legend_handles_labels()
 by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-plt.legend(by_label.values(), by_label.keys(), loc='center right', bbox_to_anchor=(0.944, 0.73), prop={'size': 8}, fancybox=True, shadow=True)
-plt.savefig('regime_figure.png', dpi=d, bbox_inches='tight')
+plt.legend(by_label.values(), by_label.keys(), loc='center right', bbox_to_anchor=(0.944, 0.73), prop={'size': 11}, fancybox=True, shadow=True)
+plt.savefig('regime_figure_downstream.png', dpi=d, bbox_inches='tight')
 plt.clf()
 
 #Mixing efficiency upstream
@@ -308,9 +346,9 @@ for i in range(len(a)):
     for j in range(len(c)):
         M = avgs[i]['Phi_d_U'][j]
         e_k = avgs[i]['KED_U'][j]
-        plt.errorbar(c_axis[j], M/(M+e_k), capsize=5, linestyle='None', marker=markers[i][j], color=colors1[i], label=labels[i])    
+        plt.errorbar(c_axis[j], M/(M+e_k), capsize=5, linestyle='None', marker=markers1[i][j], color=colors1[i], label=labels_height[i])    
         if j == len(c)-1:
-            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
+            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels_height[i])
 plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
 plt.ylabel('$\\Gamma$')
 plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
@@ -328,9 +366,9 @@ for i in range(len(a)):
     for j in range(len(c)):
         M = avgs[i]['Phi_d_D'][j]
         e_k = avgs[i]['KED_D'][j]
-        plt.errorbar(c_axis[j], M/(M+e_k), capsize=5, linestyle='None', marker=markers[i][j], color=colors1[i], label=labels[i])    
+        plt.errorbar(c_axis[j], M/(M+e_k), capsize=5, linestyle='None', marker=markers2[i][j], color=colors1[i], label=labels_height[i])    
         if j == len(c)-1:
-            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels[i])
+            plt.plot([], [], marker='o', linestyle='None', color=colors1[i], label=labels_height[i])
 plt.xlabel('$U/\\sqrt{{z_0 \\Delta B}}$')
 plt.ylabel('$\\Gamma$')
 plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
@@ -423,7 +461,7 @@ plt.plot([], [], color='black', linestyle=styles['200'], label='$U/\\sqrt{{z_0 \
 plt.legend(fancybox=True, shadow=True, loc='center')
 plt.savefig('temp2.png', dpi=d)
 
-with h5py.File('regime_files/data-mixingsim-a200c005-00_s133.h5', mode='r') as f:
+with h5py.File('regime_files/data-mixingsim-a102c005-00_s70.h5', mode='r') as f:
     rho = f['tasks']['rho'][0]
     u = f['tasks']['u'][0]
     w = f['tasks']['w'][0]
@@ -434,7 +472,7 @@ with h5py.File('regime_files/data-mixingsim-a200c005-00_s133.h5', mode='r') as f
     u_z = np.gradient(u, z[0], axis=1, edge_order=2)
     w_x = np.gradient(w, np.concatenate(x).ravel(), axis=0, edge_order=2)
     w_z = np.gradient(w, z[0], axis=1, edge_order=2)
-    rho_ref, z_ref = sort_rho_z('regime_files/data-mixingsim-a200c005-00_s133.h5', domain)
+    rho_ref, z_ref = sort_rho_z('regime_files/data-mixingsim-a102c005-00_s70.h5', domain)
     deriv = np.gradient(z_ref, z[0], axis=1, edge_order=2)/np.gradient(rho, z[0], axis=1, edge_order=2)+np.gradient(z_ref, np.concatenate(x).ravel(), axis=0, edge_order=2)/np.gradient(rho, np.concatenate(x).ravel(), axis=0, edge_order=2)
     deriv2 = np.gradient(rho_ref, z[0], axis=1, edge_order=1)
     rho_z = np.gradient(rho, z[0], axis=1, edge_order=2)
@@ -451,12 +489,13 @@ with h5py.File('regime_files/data-mixingsim-a200c005-00_s133.h5', mode='r') as f
     #plt.xlim(0, 1e5)
     #plt.savefig('jghjgjg.png')
     #plt.clf()
-    #integrand = mu*(2*u_x**2+2*w_z**2+(u_z+w_x)**2)
-    integrand = -9.8*np.nan_to_num(1/deriv2, posinf=0, neginf=0, nan=0)*(rho_x**2+rho_z**2)/(sw.dens0(28,-2))
-    N_sq = -9.8/sw.dens0(28,-2)*np.average(np.average(np.gradient(rho_ref, z[0], axis=1), axis=0))
+    integrand = mu*(2*u_x**2+2*w_z**2+(u_z+w_x)**2)/epsilon_0
+    #integrand = -9.8*np.nan_to_num(1/deriv2, posinf=0, neginf=0, nan=0)*(rho_x**2+rho_z**2)/(sw.dens0(28,-2))
+    #N_sq = -9.8/sw.dens0(28,-2)*np.average(np.average(np.gradient(rho_ref, z[0], axis=1), axis=0))
     #integrand = 2*mu*(u_x**2+w_z**2+u_z**2+w_x**2)/np.sqrt(DB**3*z0)
+    #integrand = (-9.8/sw.dens0(28,-2)*rho_z)/u_z**2
     fig_j, ax_j = plt.subplots(figsize=(16,12))
-    im_j = ax_j.imshow(np.transpose(integrand/N_sq), vmin=0, vmax=1e2, origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
+    im_j = ax_j.imshow(np.transpose(integrand), vmin=0, vmax=1e-3, origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
     plt.ylim(plt.ylim()[::1])
     plt.xlim(64/(H-z0), (L-40)/(H-z0))
     fig_j.colorbar(im_j, orientation='horizontal', label='$dz_*/d\\rho |\\nabla\\rho|^2$')
@@ -540,39 +579,87 @@ plt.savefig('bore_figure.png', bbox_inches='tight')
 plt.clf()
 
 #density regimes
-a_s = [2, 0.95, 1.2, 0.5, 2, 0.5]
-fs = ['regime_files/data-mixingsim-a200c200-00_s320.h5',
-      'regime_files/data-mixingsim-a095c105-00_s320.h5',
+titles1 = ['Supercritical', 'Rarefaction', 'Solitons', 'Blocking']
+titles2 = ['Vortex shedding', 'Stirred', 'Laminar jump', 'Blocked', 'Lee waves']
+a_s = [2, 1.2, 1.2, 2]
+a_s2 = [2, 0.95, 0.5, 2, 0.5]
+fs1 = ['regime_files/data-mixingsim-a200c200-00_s160.h5',
+      'regime_files/data-mixingsim-a102c005-00_s70.h5',
       'regime_files/data-mixingsim-a102c100-00_s180.h5',
+      'regime_files/data-mixingsim-a200c005-00_s220.h5',]
+fs2 = ['regime_files/data-mixingsim-a200c200-00_s320.h5',
+      'regime_files/data-mixingsim-a095c105-00_s320.h5',
       'regime_files/data-mixingsim-a005c100-00_s240.h5',
-      'regime_files/data-mixingsim-a200c005-00_s160.h5',
+      'regime_files/data-mixingsim-a200c005-00_s220.h5',
       'regime_files/data-mixingsim-a005c005-00_s180.h5']
-rhos = []
-padding = [-0.5, 12.6, 18.6, 10.8, -6.3, -5.1]
-for fi in fs:
+rhos1 = []
+rhos2 = []
+for fi in fs1:
     with h5py.File(fi, mode='r') as f:
-        rhos.append(f['tasks']['rho'][0])
-fig, axs = plt.subplots(3,2, figsize=(14, 4))
-for i, ax in enumerate(fig.axes):
-    pcm = ax.imshow(np.transpose(rhos[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), H/(H-z0), 0))
-    ax.fill_between(np.linspace(0, L, Nx)/(H-z0), 0, -keel(a_s[i])/(H-z0), facecolor="white", zorder=10)
-    ax.plot(np.linspace(0, L, Nx)/(H-z0), -keel(a_s[i])/(H-z0), linewidth=0.5, color='black')
-    ax.set_ylim(0,4)
-    ax.set_ylim(ax.get_ylim()[::-1])
-    ax.set_xlim(20,115)
-    ax.set_aspect("auto")
-    ax.plot(85+padding[i], -0.759, ms=8, marker=['*', '^', 'o', 'D', 's', 'P'][i], color=colors2[['*', '^', 'o', 'D', 's', 'P'][i]], clip_on=False)
-    ax.set_title(titles[i])
-    if i % 2 == 0:
-        ax.set_ylabel('$z/z_0$')
-    if i > 3:
-        ax.set_xlabel('$x/z_0$')      
+        rhos1.append(f['tasks']['rho'][0])
+for fi in fs2:
+    with h5py.File(fi, mode='r') as f:
+        rhos2.append(f['tasks']['rho'][0])
+plt.rcParams.update({'font.size':17})
+#Upstream
+fig, axes = plt.subplots(2,2, figsize=(13, 6))
+k = 0
+for i in range(len(axes)):
+    for j in range(len(axes[0])):
+        pcm = axes[i, j].imshow(np.transpose(rhos1[k])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), H/(H-z0), 0))
+        axes[i, j].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, -keel(a_s[k])/(H-z0), facecolor="white", zorder=10)
+        axes[i, j].plot(np.linspace(0, L, Nx)/(H-z0), -keel(a_s[k])/(H-z0), linewidth=0.5, color='black')
+        axes[i, j].set_xticks([25, 50, 75])
+        axes[i, j].set_xlim(20,75)
+        axes[i, j].set_aspect("auto")
+        axes[i, j].plot(72, 3.6, ms=15, marker=['d', 'D', 'p', 'o', 's'][k], color=colors2[['d', 'D', 'p', 'o', 's'][k]], clip_on=False)
+        axes[i, j].set_title(titles1[k])
+        axes[i, j].set_ylim(0,4)
+        axes[i, j].set_ylim(axes[i, j].get_ylim()[::-1])
+        if k == 2 or k == 3:
+            axes[i, j].set_xlabel('$x/z_0$')
+        if k == 0 or k == 2:
+            axes[i, j].set_ylabel('$z/z_0$')
+        k += 1
 plt.tight_layout()
-fig.subplots_adjust(right=0.8, hspace=0.8, wspace=0.08)
-cbar_ax = fig.add_axes([0.82, 0.18, 0.02, 0.7])
+fig.subplots_adjust(right=0.8, hspace=0.6, wspace=0.3)
+cbar_ax = fig.add_axes([0.835, 0.18, 0.02, 0.7])
 cbar = fig.colorbar(pcm, cax=cbar_ax)
 cbar.set_label("$\\rho-\\rho_1$")
 fig.set_dpi(d)
-plt.savefig('regime_graphic_figure.png', bbox_inches='tight')
+plt.savefig('regime_graphic_figure_up.png', bbox_inches='tight')
 plt.clf()
 
+
+#Downstream
+fig = plt.figure(figsize=(13, 6))
+spec = GridSpec(ncols=6, nrows=2)
+ax1 = fig.add_subplot(spec[0, 0:2])
+ax2 = fig.add_subplot(spec[0, 2:4])
+ax3 = fig.add_subplot(spec[0, 4:])
+ax4 = fig.add_subplot(spec[1, 1:3])
+ax5 = fig.add_subplot(spec[1, 3:5])
+axes = [ax1, ax2, ax3, ax4, ax5]
+for i in range(len(axes)):
+    pcm = axes[i].imshow(np.transpose(rhos2[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), H/(H-z0), 0))
+    axes[i].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, -keel(a_s2[i])/(H-z0), facecolor="white", zorder=10)
+    axes[i].plot(np.linspace(0, L, Nx)/(H-z0), -keel(a_s2[i])/(H-z0), linewidth=0.5, color='black')
+    axes[i].set_xticks([75, 95, 115])
+    axes[i].set_xlim(75,115)
+    axes[i].set_aspect("auto")
+    axes[i].plot(112, 3.6, ms=15, marker=['*', 'p', '^', 's', 'P'][i], color=colors2[['*', 'p', '^', 's', 'P'][i]], clip_on=False)
+    print(i)
+    axes[i].set_title(titles2[i])
+    axes[i].set_ylim(0,4)
+    axes[i].set_ylim(axes[i].get_ylim()[::-1])
+    axes[i].set_xlabel('$x/z_0$')
+    if i == 0 or i == 3:
+        axes[i].set_ylabel('$z/z_0$')
+plt.tight_layout()
+fig.subplots_adjust(right=0.8, hspace=0.6, wspace=0.57)
+cbar_ax = fig.add_axes([0.835, 0.18, 0.02, 0.7])
+cbar = fig.colorbar(pcm, cax=cbar_ax)
+cbar.set_label("$\\rho-\\rho_1$")
+fig.set_dpi(d)
+plt.savefig('regime_graphic_figure_down.png', bbox_inches='tight')
+plt.clf()

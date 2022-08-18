@@ -14,7 +14,7 @@ Written by: Rosalie Cormier, August 2021
 #Can add masking of ice keel if desired
 
 ##############################
-import Constants as CON
+import Constants_anim as CON
 import sys
 import h5py
 import math
@@ -32,7 +32,7 @@ import dedalus.public as de
 from dedalus.extras import flow_tools, plot_tools
 from dedalus.tools import post
 from dedalus.core.operators import GeneralFunction
-
+import seawater as sw
 #plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rcParams.update({'font.size': 14})
@@ -50,8 +50,8 @@ import pathlib
 output_path = pathlib.Path(args['--output']).absolute()
 
 #Space-dependent variables that can be accessed directly - there are others not included here
-tasks_legend = ['u', 'w', 'C', 'vorticity', 'dsfx', 'dsfz', 'f']
-task_titles_legend = ['x-Velocity', 'z-Velocity', 'Salinity ($h/z_0={0}$, $U/\\sqrt{{z_0g^\\prime}}$=${1}$)'.format(CON.a, CON.c), 'Vorticity ($\hat{y}$)', 'Diffusive Salinity Flux, x-Component', 'Diffusive Salinity Flux, z-Component', 'Keel mask']
+tasks_legend = ['u', 'w', 'C', 'vorticity', 'dsfx', 'dsfz', 'f', 'rho', 'p', 'diff']
+task_titles_legend = ['x-Velocity', 'z-Velocity', 'Salinity ($h/z_0={0}$, $U/\\sqrt{{z_0g^\\prime}}$=${1}$)'.format(CON.a, CON.c), 'Vorticity ($\hat{y}$)', 'Diffusive Salinity Flux, x-Component', 'Diffusive Salinity Flux, z-Component', 'Keel mask', 'Density', 'Pressure', 'Diapycnal Diffusivity']
 tasks = specific_task.split(",")
 task_titles = []
 for task in tasks:
@@ -70,6 +70,11 @@ z0 = CON.z0
 h_z = CON.H-z0
 sigma = CON.sigma
 
+DB = 9.8*(sw.dens0(30,-2)-sw.dens0(28,-2))/sw.dens0(28,-2)
+E_0 = (9.8*(sw.dens0(30,-2)-sw.dens0(28,-2))*(H-z0)**4) 
+phi_0 = sw.dens0(28,-2)*np.sqrt(DB**3*(H-z0)**(7))
+t_0 = np.sqrt((H-z0)/DB)
+
 xbasis = de.Chebyshev('x', Nx, interval=(0, L))
 zbasis = de.Chebyshev('z', Nz, interval=(0, H))
 domain = de.Domain([xbasis, zbasis], grid_dtype=np.float64)
@@ -80,13 +85,25 @@ wall_mask = 0.5*(np.tanh((x-10)/0.025)+1)-0.5*(np.tanh((x-100)/0.025)+1)
 def sort_h5files(h5_files, splice0, splice1):
 	#Sort h5 files
 	temp_list = []
-	temp_list2 = []
 	for filename in h5_files:
-		temp_list.append(int(filename[filename.find("_")+2:filename.find(".")]))
-	for i in range(splice0, splice1+1):
-		temp_list2.append(h5_files[temp_list.index(i)])
-	h5_files = temp_list2
-	return h5_files
+		if 'h5' in filename:
+			temp_list.append(filename)
+	return sorted(temp_list, key=lambda x: int(x[x.find("_")+2:x.find(".")]))[splice0:splice1]
+def gen_diff(rho):
+	K_slices = []
+	x = np.linspace(0, L, Nx)
+	z = np.linspace(-H, 0, Nz)
+	for i in range(len(rho)):
+		rho_ref = np.reshape(-np.sort(-rho[i].flatten()), (Nx, Nz), order='F')
+		deriv = 1/np.gradient(rho_ref, z, axis=1, edge_order=2)
+		rho_z = np.gradient(rho[i], z, axis=1, edge_order=2)
+		rho_x = np.gradient(rho[i], x, axis=0, edge_order=2)
+		integrand = -9.8*deriv*(rho_x**2+rho_z**2)
+		N_sq = -9.8/sw.dens0(28,-2)*np.average(np.average(np.gradient(rho_ref, z, axis=1, edge_order=2), axis=0))
+		K_p = integrand/N_sq
+		K_slices.append(K_p)
+	return K_slices
+
 def read_h5files(h5_files):
 	#Dsets have size of tasks x timesteps x 2 x nx x nz
 	dsets = []
@@ -97,8 +114,8 @@ def read_h5files(h5_files):
 		for filename in h5_files:
 
 			with h5py.File(filename, mode='r') as f:
-
-				dset = f['tasks'][task]
+				#dset = f['tasks'][task]
+				dset = gen_diff(f['tasks']['rho'])
 				if len(dset.shape) != 3:
 					raise ValueError("This only works for 3D datasets")
 				task_grid = np.array(dset[()], dtype=np.float64) #The [()] notation returns all data from an h5 object
@@ -152,7 +169,7 @@ def animate_data(dsets):
 			color = 'k'
 			ticks = [28, 29, 30]
 		elif task_name == 'p':
-			vmin, vmax = 0, 300
+			vmin, vmax = 0, 10
 			cmap = 'viridis'
 			label = 'Pa'
 			color = 'k'
@@ -163,18 +180,18 @@ def animate_data(dsets):
 			label = ''
 			color = 'r'
 			ticks = [0, 1]
-		elif task_name == 'ct':
-			vmin, vmax = -2, 2
+		elif task_name == 'rho':
+			vmin, vmax = 1022, 1025
 			cmap = 'viridis'
-			label = 'psu/s'
+			label = 'kg/m^3'
 			color = 'k'
-			ticks = [-2, -1, 0, 1, 2]
+			ticks = [1022, 1023, 2024, 1025]
 		elif task_name == 'vorticity':
-			vmin, vmax = -2, 2
+			vmin, vmax = -1, 1
 			cmap = 'PuOr'
 			label = 's$^{-1}$'
 			color = 'k'
-			ticks = [-2, -1, 0, 1, 2]
+			ticks = [-1, 0, 1]
 		elif task_name == 'B':
 			vmin, vmax = -300, 0
 			cmap = 'viridis'
@@ -187,21 +204,31 @@ def animate_data(dsets):
 			label = 'psu * m/s'
 			color = 'k'
 			ticks = [-0.001, 0, 0.001]
+		elif task_name == 'diff':
+			vmin, vmax = 0, 1e4
+			cmap = 'viridis'
+			label = '$W/kgm^3$'
+			color = 'k'
+			ticks = [0, 1, 1e2, 1e3, 1e4]
+		
 
 		#keel = -(h) * np.exp(-((x-l/2)**2)/(2*6**2))
 		keel = -h*sigma**2/(sigma**2+4*(x-l)**2)
+		print(np.min(dsets[j][0][1]))
 
-		fig_j, ax_j = plt.subplots(figsize=(8,8))
+		fig_j, ax_j = plt.subplots(figsize=(25,8))
 		im_j = ax_j.imshow(dsets[j][0][1].transpose(), vmin=vmin, vmax=vmax, cmap=cmap, extent=(0, L/(H-z0), -H/(H-z0), 0), origin='lower', animated=True)
 		#plt.axvline(x=l/2)
 		#plt.axvline(x=l/2+sigma)
-		plt.fill_between(x/(H-z0), 0, keel/(H-z0), facecolor="white")
+		#plt.fill_between(x/(H-z0), 0, keel/(H-z0), facecolor="white")
 		plt.plot(x/(H-z0), keel/(H-z0), linewidth=0.5, color=color)
-		#plt.xlim(2, plt.xlim()[1]-2)
+		plt.xlim(160/(H-z0), (L-40)/(H-z0))
+		plt.ylim(-5,0)
 		fig_j.colorbar(im_j, label=label, orientation='horizontal', ticks=ticks)
-		ax_j.set_title(task_title+' Time: {0}s-{1}s'.format(int(splice0*CON.save_freq*CON.save_max*CON.dt), int(splice1*CON.save_freq*CON.save_max*CON.dt)))
+		ax_j.set_title(task_title+' Time: {0}-{1}'.format(int(splice0*CON.save_freq*CON.save_max*CON.dt/t_0), int(splice1*CON.save_freq*CON.save_max*CON.dt/t_0)))
 		ax_j.set_xlabel('$x/z_0$')
 		ax_j.set_ylabel('$z/z_0$')
+		ax_j.set_aspect('auto')
 		plt.tight_layout()
 
 		def init():
