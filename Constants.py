@@ -17,7 +17,7 @@ Delta = 1e-1
 b = 29
 
 L, H = 960, 80 #m
-a, c = 2, 0.5
+a, c = 2, 2
 l, h = 600, a*(H-z0) #m
 sigma = 3.9*h
 U = c*np.sqrt((H-z0)*9.8*(sw.dens0(30,-2)-sw.dens0(28,-2))/sw.dens0(28,-2)) #m/s
