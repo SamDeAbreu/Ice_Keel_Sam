@@ -71,23 +71,14 @@ def sort_h5files(h5_files, splice0, splice1):
 		if 'h5' in filename:
 			temp.append(filename)
 	return sorted(temp, key=lambda x: int(x[x.find("_")+2:x.find(".")]))[splice0:splice1+1]
-def sort_rho_z(h5_file, domain):
-	with h5py.File(h5_file, mode='r') as f:
-		x, z = domain.grids(domain.dealias)
-		Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(0, L, 0, H)
-		rho = f['tasks']['rho'][0][Ni_x:Nf_x, Ni_z:Nf_z]
-		#rho = np.array([[6,1,2], [5, 9, 10], [1, 7, 2], [1, 2, 8]])
-		#z = np.array([0, 10, 20])
-		#print(f['tasks']['rho'].dims[0]['sim_time'][:])
-		#print(f['tasks']['rho'].dims[2][0][:])
-		#z_sort alg: 
-		# 1) Sort density values and use the same indices to sort a list A=[0,1,2,...]
-		# 2) Create a new B=[0,1,2,...] list parallel to the new sorted density values (new z location of sorted density values)
-		# 3) Sort B by the indices to sort A 
-		# 4) Compute the z-values for each index in B. Now B[mx][mz] represents the reference z value of the sorted density for a density at (mx,mz) 
-		ind = z[0][np.argsort(np.argsort(-rho, axis=None))//(Nf_x-Ni_x)]
-		z_sort_height = np.reshape(ind, (Nf_x-Ni_x, Nf_z-Ni_z))
-		rho_sort = np.reshape(-np.sort(-rho.flatten()), (Nf_x-Ni_x, Nf_z-Ni_z), order='F')
+def sort_rho_z(rho, L_1, L_2, H_1, H_2):
+	domain = create_domain(L_1, L_2, H_1, H_2)
+	x, z = domain.grids(domain.dealias)
+	Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(L_1, L_2, H_1, H_2)
+	rho = rho[Ni_x:Nf_x, Ni_z:Nf_z]	 
+	ind = z[0][np.argsort(np.argsort(-rho, axis=None))//(Nf_x-Ni_x)]
+	z_sort_height = np.reshape(ind, (Nf_x-Ni_x, Nf_z-Ni_z))
+	rho_sort = np.reshape(-np.sort(-rho.flatten()), (Nf_x-Ni_x, Nf_z-Ni_z), order='F')
 	return rho_sort, z_sort_height
 def compute_mixedlayerdepth(h5_file, L_1, L_2, H_1, H_2):
 	domain = create_domain(L_1, L_2, H_1, H_2)
@@ -104,22 +95,22 @@ def compute_mixedlayerdepth(h5_file, L_1, L_2, H_1, H_2):
 			posz.append(-z[0][Nz-i])
 	return np.mean(posz), posz
 def compute_potential_energies(h5_file, L_1, L_2, H_1, H_2):
-	domain = create_domain(0, L, 0, H)
+	domain = create_domain(L_1, L_2, H_1, H_2)
 	x, z = domain.grids(domain.dealias)
-	region = 1/32*(np.tanh((x-L_1)/0.01)+1)*(1-np.tanh((x-L_2)/0.01))*(-np.tanh((z-(H-H_1))/0.01)+1)*(1+np.tanh((z-(H-H_2))/0.01))*(1-np.tanh((z-H+h*sigma**2/(sigma**2+4*(x-l)**2))/0.01))
+	#region = 1/32*(np.tanh((x-L_1)/0.01)+1)*(1-np.tanh((x-L_2)/0.01))*(-np.tanh((z-(H-H_1))/0.01)+1)*(1+np.tanh((z-(H-H_2))/0.01))*(1-np.tanh((z-H+h*sigma**2/(sigma**2+4*(x-l)**2))/0.01))
+	region = 0.5*(1-np.tanh((z-H+h*sigma**2/(sigma**2+4*(x-l)**2))/0.01))
 	Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(L_1, L_2, H_1, H_2)
-	rho_ref, z_ref = sort_rho_z(h5_file, domain)
 	with h5py.File(h5_file, mode='r') as f:
-		rho = f['tasks']['rho'][0]
-		w = f['tasks']['w'][0]
-		u = f['tasks']['u'][0]
+		rho_ref, z_ref = sort_rho_z(f['tasks']['rho'][0], L_1, L_2, H_1, H_2)
+		rho = f['tasks']['rho'][0][Ni_x:Nf_x, Ni_z:Nf_z]
+		w = f['tasks']['w'][0][Ni_x:Nf_x, Ni_z:Nf_z]
+		u = f['tasks']['u'][0][Ni_x:Nf_x, Ni_z:Nf_z]
 
 		integrand = domain.new_field()
 		integrand.set_scales(domain.dealias)
 		
 		integrand['g'] = region
 		A = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
-
 		integrand['g'] = 9.8*rho*z_ref*region
 		E_b = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
 	
@@ -135,8 +126,7 @@ def compute_potential_energies(h5_file, L_1, L_2, H_1, H_2):
 		rho_z = np.gradient(rho, z[0], axis=1, edge_order=2)
 	
 		rho_x = np.gradient(rho, np.concatenate(x).ravel(), axis=0, edge_order=2)
-		
-		integrand['g'] = -9.8*mu*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*(rho_z**2+rho_x**2)*region/(A*sw.dens0(28,-2))
+		integrand['g'] = -9.8*region*mu*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*(rho_z**2+rho_x**2)/(A*sw.dens0(28,-2))
 		phi_d = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
 		
 		rho_avg_s = np.average(np.gradient(rho_ref, z[0], axis=1, edge_order=2), axis=0)
@@ -150,12 +140,12 @@ def compute_potential_energies(h5_file, L_1, L_2, H_1, H_2):
 		u_z = np.gradient(u, z[0], axis=1, edge_order=2)
 		w_x = np.gradient(w, np.concatenate(x).ravel(), axis=0, edge_order=2)
 		w_z = np.gradient(w, z[0], axis=1, edge_order=2)
-		integrand['g'] = region*nu*(2*u_x**2+(u_z+w_x)**2+2*w_z**2)/A
+		integrand['g'] = nu*(2*u_x**2+(u_z+w_x)**2+2*w_z**2)/A
 		ked = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
 
 		L_t = np.sqrt(np.average((z-z_ref)**2))
 		
-		integrand['g'] = 0.5*rho*(u_x**2+u_z**2+w_x**2+w_z**2)*region
+		integrand['g'] = 0.5*region*rho*(u_x**2+u_z**2+w_x**2+w_z**2)
 		E_k = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
 		return {'E_b': E_b, 'E_a': E_a, 'E_p': E_p, 'phi_d': phi_d, 'phi_z': phi_z, 'ked': ked, 'L_t': L_t, 'E_k': E_k, 'K': K}
 def plot_potential_energies():
@@ -223,7 +213,7 @@ def create_figs(time, Eb, Ea, Ep, phi_d, phi_z, ked_rate, MLD, m, type, E_k=None
 	plt.savefig(type+'_totalpotentialenergy_{0}_{1}-{2}.png'.format(fileno, splice0, splice1))
 	plt.clf()
 
-	plt.plot(time/t_0, phi_d, label="Rate of mixing")
+	plt.plot(time/t_0, phi_d/phi_0, label="Rate of mixing")
 	plt.xlabel("$t/\\sqrt{{z_0/\\Delta B}}$")
 	plt.ylabel("$\\phi_d/\\phi_{{d_{{i}}}}$")
 	plt.title("Rate of mixing ($h={0}$m, U=${1}$m/s)".format(h, CON.U))
@@ -255,7 +245,7 @@ def create_figs(time, Eb, Ea, Ep, phi_d, phi_z, ked_rate, MLD, m, type, E_k=None
 	plt.savefig(type+'_test.png')
 	plt.clf()
 
-	plt.plot(time/t_0, m/mu)
+	plt.plot(time/t_0, Eb/m-Eb[0]/m[0])
 	plt.xlabel("$t/\\sqrt{{z_0/\\Delta B}}$")
 	plt.ylabel("$\\Delta E_b$ (J/kg)")
 	plt.savefig(type+'_thrope.png_{0}_{1}-{2}.png'.format(fileno, splice0, splice1))
@@ -314,7 +304,7 @@ def create_data_file():
 			data[9].append(energies['K'])
 			data[10].append(energies['E_k'])
 			#Region 2: Downstream from keel height
-			L_1, L_2, H_1, H_2 = l, L-40, 0, 32
+			L_1, L_2, H_1, H_2 = l, L-40, 0, 36
 			energies = compute_potential_energies(h5file, L_1, L_2, H_1, H_2)
 			data[11].append(energies['E_b'])
 			data[12].append(energies['E_a'])
@@ -324,7 +314,7 @@ def create_data_file():
 			data[16].append(energies['ked'])
 			data[17].append(energies['K'])
 			#Region 3: Upstream from keel height
-			L_1, L_2, H_1, H_2 = 160, l, 0, 32
+			L_1, L_2, H_1, H_2 = 160, l, 0, 36
 			energies = compute_potential_energies(h5file, L_1, L_2, H_1, H_2)
 			data[18].append(energies['E_b'])
 			data[19].append(energies['E_a'])
@@ -360,84 +350,130 @@ def create_salt_file():
 	plt.savefig('ML.png')
 	plt.clf()
 
-def mixing_depth_calculate(rho_avg, L_1, L_2):
+def mixing_depth_calculate(rho, L_1, L_2, ab):
 	times = [[220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450]]
 	a_s = ['005', '095', '102', '200']
 	c_s = ['005', '100', '105', '200']
-	domain = create_domain(0, L, 0, H)
-	Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(0, L, 0, H)
+	domain = create_domain(L_1, L_2, 0, H)
+	Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(L_1, L_2, 0, H)
 	x, z = domain.grids(domain.dealias)
 	integrand = domain.new_field()
 	integrand.set_scales(domain.dealias)
 	K = {}
-	for ab in a_s:
-		for cb in c_s:
-			h = (H-z0)*conv(ab)
-			region = 1/8*(1-np.tanh((z-H+h*gen_sigma(ab)**2/(gen_sigma(ab)**2+4*(x-l)**2))/0.01))*(1+np.tanh((x-L_1)/0.01))*(1-np.tanh((x-L_2)/0.01))
-			integrand['g'] = region
-			L_z = de.operators.integrate(integrand, 'x').evaluate()['g'][0]
+	h = (H-z0)*conv(ab)
+	region = 0.5*(1-np.tanh((z-H+h*gen_sigma(ab)**2/(gen_sigma(ab)**2+4*(x-l)**2))/0.01))
+	integrand['g'] = region
+	L_z = de.operators.integrate(integrand, 'x').evaluate()['g'][0]
+	rho_ref, z_ref = sort_rho_z(rho, L_1, L_2, 0, H)
+	rho = rho[Ni_x:Nf_x, Ni_z:Nf_z]
+	deriv = 1/np.gradient(rho_ref, z[0], axis=1, edge_order=2)
+	rho_z = np.gradient(rho, z[0], axis=1, edge_order=2)
+	rho_x = np.gradient(rho, np.concatenate(x).ravel(), axis=0, edge_order=2)
+	nabla_rho = rho_x**2+rho_z**2
+	nabla_rho[nabla_rho < 1e-5] = 0 #Set possible grid errors to 0
+	integrand['g'] = -9.8*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*nabla_rho*region/(sw.dens0(28,-2))
+	phi_d = de.operators.integrate(integrand, 'x').evaluate()['g'][0]/L_z	
+	rho_avg_s = np.gradient(np.average(rho_ref, axis=0), z[0])
+	N_sq = -9.8/sw.dens0(28,-2)*np.average(rho_avg_s)
+	return phi_d/(N_sq)
 
-			rho_ref = np.reshape(-np.sort(-rho_avg['a'+ab+'c'+cb].flatten()), (Nx, Nz), order='F')
-			deriv = 1/np.gradient(rho_ref, z[0], axis=1, edge_order=2)
-			rho_z = np.gradient(rho_avg['a'+ab+'c'+cb], z[0], axis=1, edge_order=2)
-			rho_x = np.gradient(rho_avg['a'+ab+'c'+cb], np.concatenate(x).ravel(), axis=0, edge_order=2)
-
-			integrand['g'] = -9.8*mu*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*(rho_z**2+rho_x**2)*region/(sw.dens0(28,-2))
-			phi_d = de.operators.integrate(integrand, 'x').evaluate()['g'][0]/L_z	
-			rho_avg_s = np.gradient(np.average(rho_ref, axis=0), z[0])
-			N_sq = -9.8/sw.dens0(28,-2)*np.average(rho_avg_s)
-			K[ab+cb] = phi_d/(N_sq*mu)
-	return K
-	
-
-def mixing_depth_figure(L_1, L_2):
+def mixing_depth_figure(L_1, L_2, title):
+	plt.rcParams.update({'font.size': 12})
 	times = [[220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450]]
 	a_s = ['005', '095', '102', '200']
 	c_s = ['005', '100', '105', '200']
-	colors = {"200": "#FF1300", "102": "#0CCAFF", "095": "#29E91F", "005": "#a67acf"}
+	#colors = {"200": "#FF1300", "102": "#0CCAFF", "095": "#29E91F", "005": "#a67acf"}
+	colors = {'005': '#99c0ff', '095': '#3385ff', '102': '#0047b3', '200': '#000a1a'}
 	styles = {"200": "solid", "105": (0, (1,1)), "100": "dashed", "005": (0, (3, 1, 1, 1))}
 	rho_avg = {}
+	K = {}
+	z = np.linspace(0, H, Nz)
 	for i in range(len(a_s)):
 		for j in range(len(c_s)):
-			rhos = None
-			for k in range(times[i][j]-65, times[i][j]):
-				with h5py.File('data-mixingsim-a{0}c{1}-00/data-mixingsim-a{0}c{1}-00_s{2}.h5'.format(a_s[i], c_s[j], k), mode='r') as f:
-					if rhos is None:
-						rhos = f['tasks']['rho'][0]
-					else:
-						rhos += f['tasks']['rho'][0]
-			
-			rho_avg['a{0}c{1}'.format(a_s[i], c_s[j])] = rhos/65
+			for k in range(70, times[i][j], 3):
+				l = 0
+				K_temp = 0
+				with h5py.File('new/data-mixingsim-a{0}c{1}-00/data-mixingsim-a{0}c{1}-00_s{2}.h5'.format(a_s[i], c_s[j], k), mode='r') as f:
+					K_temp += mixing_depth_calculate(f['tasks']['rho'][0], L_1, L_2, a_s[i])		
+					l += 1
+			K[a_s[i]+c_s[j]] = K_temp/l
 			print(i,j)
-	K = mixing_depth_calculate(rho_avg, L_1, L_2)
+	Z_m = {}
+	fig, ax1 = plt.subplots()
+	for ab in a_s[::-1]:
+		for cb in c_s:
+			v = np.argwhere(K[ab+cb] >= 1)
+			Z_m[ab+cb] = np.min(v)
+			ax1.plot(K[ab+cb], (H-z)/(H-z0), color=colors[ab], linestyle=styles[cb], linewidth=2)
+	ax1.set_xscale('log')
+	ax2 = ax1.twiny()
+	x = np.linspace(0, 120, Nx)
+	ax2.fill_between(x, 0, -0.01+2*gen_sigma(2)**2/(gen_sigma(2)**2+(H-z0)**2*(x-115)**2), facecolor='w')
+	ax2.fill_between(x, 0, -0.01+2*gen_sigma(2)**2/(gen_sigma(2)**2+(H-z0)**2*(x-115)**2), facecolor=colors['200'], alpha=0.9)
+	ax2.fill_between(x, 0, -0.01+1.2*gen_sigma(1.2)**2/(gen_sigma(1.2)**2+(H-z0)**2*(x-115)**2), facecolor='w')
+	ax2.fill_between(x, 0, -0.01+1.2*gen_sigma(1.2)**2/(gen_sigma(1.2)**2+(H-z0)**2*(x-115)**2), facecolor=colors['102'], alpha=0.9)
+	ax2.fill_between(x, 0, -0.01+0.95*gen_sigma(0.95)**2/(gen_sigma(0.95)**2+(H-z0)**2*(x-115)**2), facecolor='w')
+	ax2.fill_between(x, 0, -0.01+0.95*gen_sigma(0.95)**2/(gen_sigma(0.95)**2+(H-z0)**2*(x-115)**2), facecolor=colors['095'], alpha=0.9)
+	ax2.fill_between(x, 0, -0.01+0.5*gen_sigma(0.5)**2/(gen_sigma(0.5)**2+(H-z0)**2*(x-115)**2), facecolor='w')
+	ax2.fill_between(x, 0, -0.01+0.5*gen_sigma(0.5)**2/(gen_sigma(0.5)**2+(H-z0)**2*(x-115)**2), facecolor=colors['005'], alpha=0.9)
+	#plt.plot(x, -np.ones(len(x)), linestyle='dashed', color='black')
+	ax2.plot([], [], linestyle=styles['200'], label="$Fr=2$", color='black')
+	ax2.plot([], [], linestyle=styles['105'], label="$Fr=1.5$", color='black')
+	ax2.plot([], [], linestyle=styles['100'], label="$Fr=1$", color='black')
+	ax2.plot([], [], linestyle=styles['005'], label="$Fr=0.5$", color='black')
+	ax2.set_xticks([])
+	ax2.set_xlim(0, 120)
+	plt.legend(loc='lower right', fancybox=True, shadow=True, prop={'size':11})
+	ax1.set_xlim(1, 1e7)
+	ax1.set_ylim(0, 5)
+	ax1.set_ylim(plt.ylim()[::-1])
+	ax1.set_xlabel(title+" Diapycnal Diffusivity $K_{{\\rho,z}}^{0}/\\mu$".format(title[0]))
+	ax1.set_title('(a)')
+	ax1.set_ylabel("Vertical Depth $z/z_0$")
+	ax1.grid(visible=True)
+	#ax1.set_title(title)
+	fig.set_size_inches(6.4,4.8)
+	plt.savefig('Kp_depth_figure_{0}-{1}.png'.format(L_1,L_2), dpi=600, bbox_inches='tight')
+	plt.clf()
+	#Max mixing depth figure
+	c_v = {'005': 0.5, '100': 1.0, '105': 1.5, '200': 2.0}
+	if L_1 == 160:
+		markers = {'005005': 'D', '005100': 'D', '005105': 'D', '005200': 'P', '095005': 'D', '095100': 'o', '095105': 'o', '095200': 'P', '102005': 'D', '102100': 'o', '102105': 'o', '102200': 'P', '200005': 's', '200100': 'o', '200105': 'o', '200200': 'P'}
+	else:
+		markers = {'005005': 'd', '005100': '^', '005105': '^', '005200': '*', '095005': 'd', '095100': '^', '095105': 'p', '095200': '*', '102005': 'd', '102100': '^', '102105': 'p', '102200': '*', '200005': 's', '200100': '^', '200105': 'p', '200200': '*'}
+	colors2 = ['#99c0ff', '#3385ff', '#0047b3', '#000a1a']
+	labels = ['$\\eta=0.5$', '$\\eta=0.95$', '$\\eta=1.2$', '$\\eta=2.0$']
+	i = 0 
 	for ab in a_s:
 		for cb in c_s:
-			plt.plot(K[ab+cb], (H-z[0])/(H-z0), color=colors[ab], linestyle=styles[cb])
-	o = (1e5/(960))**2
-	x = 1e5/960*np.linspace(0, L, Nx)
-	plt.fill_between(x, 0, -0.01+2*o*gen_sigma(2)**2/(o*gen_sigma(2)**2+(x-1e5/960*L/2)**2), facecolor='w')
-	plt.fill_between(x, 0, -0.01+2*o*gen_sigma(2)**2/(o*gen_sigma(2)**2+(x-1e5/960*L/2)**2), facecolor='#FF1300', alpha=0.3)
-	plt.fill_between(x, 0, -0.01+1.2*o*gen_sigma(1.2)**2/(o*gen_sigma(1.2)**2+(x-1e5/960*L/2)**2), facecolor='w')
-	plt.fill_between(x, 0, -0.01+1.2*o*gen_sigma(1.2)**2/(o*gen_sigma(1.2)**2+(x-1e5/960*L/2)**2), facecolor='#0CCAFF', alpha=0.3)
-	plt.fill_between(x, 0, -0.01+0.95*o*gen_sigma(0.95)**2/(o*gen_sigma(0.95)**2+(x-1e5/960*L/2)**2), facecolor='w')
-	plt.fill_between(x, 0, -0.01+0.95*o*gen_sigma(0.95)**2/(o*gen_sigma(0.95)**2+(x-1e5/960*L/2)**2), facecolor='#0F9208', alpha=0.3)
-	plt.fill_between(x, 0, -0.01+0.5*o*gen_sigma(0.5)**2/(o*gen_sigma(0.5)**2+(x-1e5/960*L/2)**2), facecolor='w')
-	plt.fill_between(x, 0, -0.01+0.5*o*gen_sigma(0.5)**2/(o*gen_sigma(0.5)**2+(x-1e5/960*L/2)**2), facecolor='#ab76db', alpha=0.3)
-	#plt.plot(x, -np.ones(len(x)), linestyle='dashed', color='black')
-	plt.plot([], [], linestyle=styles['200'], label="$U/\\sqrt{{z_0 \\Delta B}}=2$", color='black')
-	plt.plot([], [], linestyle=styles['105'], label="$U/\\sqrt{{z_0 \\Delta B}}=1.5$", color='black')
-	plt.plot([], [], linestyle=styles['100'], label="$U/\\sqrt{{z_0 \\Delta B}}=1$", color='black')
-	plt.plot([], [], linestyle=styles['005'], label="$U/\\sqrt{{z_0 \\Delta B}}=0.5$", color='black')
+			print(ab+cb, (H-Z_m[ab+cb]/Nz*H)/((H-z0)*conv(ab)))
+			plt.plot(c_v[cb], (H-Z_m[ab+cb]/Nz*H)/((H-z0)*conv(ab)), marker=markers[ab+cb], color=colors2[i], ms=7)
+		i += 1
+	for i in range(len(a_s)):
+		plt.plot([], [], marker='X', linestyle='None', color=colors2[i], label=labels[i])
+	if L_1 != 160:
+		plt.plot([], [], marker='o', label=' ', color='white')
+		for i in range(5):
+			plt.plot([], [], marker=['*', 'p', '^', 's', 'd'][i], linestyle='None', color='black', label=['Vortex Shedding', 'Stirred', 'Laminar Jump', 'Blocked', 'Lee Waves'][i])
+	else:
+		for i in range(4):
+			plt.plot([], [], marker=['P', 'D', 'o', 's'][i], linestyle='None', color='black', label=['Supercritical', 'Rarefaction', 'Solitary Waves', 'Blocked'][i])
+	plt.xlabel('Froude Number $Fr$')
+	plt.ylabel('Maximum Relative Mixing Depth $z_{{max}}/h$')
 	plt.grid()
-	plt.legend(loc='lower right')
-	plt.xlim(0,1e5)
-	plt.ylim(0, 6)
-	plt.ylim(plt.ylim()[::-1])
-	plt.xlabel("$\\overline{{K_\\rho}}/\\mu$")
-	plt.ylabel("$z/z_0$")
-	plt.savefig('Kp_depth_figure_{0}-{1}.png'.format(L_1,L_2), dpi=300, bbox_inches='tight')
+	plt.title('(b)')
+	plt.ylim(plt.ylim()[0], 6)
+	handles, labels_temp = plt.gca().get_legend_handles_labels()
+	by_label = dict(zip(labels_temp, handles))
+	plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 9}, loc='upper left', ncol=2, handleheight=0.5)
+	plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
+	#if L_1 == 160:
+		#plt.title('Upstream')
+	#else:
+		#plt.title('Downstream')
+	plt.savefig('Max_mixing_depth_{0}-{1}.png'.format(L_1,L_2), dpi=600, bbox_inches='tight')
 	plt.clf()
-	
+	return 
 	#Mixing+stirring figure
 	Nf_xu, Ni_xu, Nf_zu, Ni_zu = generate_modes(30, l, 0, H)
 	regimes = [['a200c200', 'a102c200', 'a095c200', 'a005c200'], ['a200c105', 'a102c105', 'a102c100'], ['a200c100', 'a102c100', 'a095c100'], ['a005c105', 'a005c100'], ['a200c005'], ['a102c005', 'a095c005', 'a005c005']]
@@ -482,7 +518,7 @@ def mixing_depth_figure(L_1, L_2):
 
 
 #create_data_file()
-#mixing_depth_figure(160, l)
-#mixing_depth_figure(l, L-40)
+mixing_depth_figure(160, l, 'Upstream')
+mixing_depth_figure(l, L-40, 'Downstream')
 #create_salt_file()
-plot_potential_energies()
+#plot_potential_energies()
