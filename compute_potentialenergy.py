@@ -16,6 +16,7 @@ import dedalus
 import dedalus.public as de
 import scipy.signal as sc
 import seawater as sw
+import json
 
 from docopt import docopt
 args = docopt(__doc__)
@@ -128,7 +129,8 @@ def compute_potential_energies(h5_file, L_1, L_2, H_1, H_2):
 		rho_x = np.gradient(rho, np.concatenate(x).ravel(), axis=0, edge_order=2)
 		integrand['g'] = -9.8*region*mu*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*(rho_z**2+rho_x**2)/(A*sw.dens0(28,-2))
 		phi_d = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
-		
+		phi_i = -mu*9.8*(np.average(rho[:, -1]) - np.average(rho[:, 0]))/(H_2-H_1)
+		print('phi_d: {0} and phi_i {1} with L = {2}'.format(phi_d*sw.dens0(28,-2), phi_i, L_2-L_1))	
 		rho_avg_s = np.average(np.gradient(rho_ref, z[0], axis=1, edge_order=2), axis=0)
 		N_sq = -9.8/sw.dens0(28,-2)*np.average(rho_avg_s)
 		K = phi_d/N_sq
@@ -351,60 +353,87 @@ def create_salt_file():
 	plt.clf()
 
 def mixing_depth_calculate(rho, L_1, L_2, ab):
-	times = [[220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450]]
+	K = []
+	K_avg = []
+	for z_m in np.linspace(0, H, Nz):
+		Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(L_1, L_2, 0, z_m)
+		domain = create_domain(L_1, L_2, 0, z_m)
+		x, z = domain.grids(domain.dealias)
+		integrand = domain.new_field()
+		integrand.set_scales(domain.dealias)
+		h = (H-z0)*conv(ab)
+		region = 0.5*(1-np.tanh((z-H+h*gen_sigma(ab)**2/(gen_sigma(ab)**2+4*(x-l)**2))/0.01))
+		integrand['g'] = region
+		A = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
+		rho_ref, z_ref = sort_rho_z(rho, L_1, L_2, 0, z_m)
+		rho = rho[Ni_x:Nf_x, Ni_z:Nf_z]
+		deriv = 1/np.gradient(rho_ref, z[0], axis=1, edge_order=2)
+		rho_z = np.gradient(rho, z[0], axis=1, edge_order=2)
+		rho_x = np.gradient(rho, np.concatenate(x).ravel(), axis=0, edge_order=2)
+		integrand['g'] = -9.8*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*(rho_x**2+rho_z**2)*region/(sw.dens0(28,-2))
+		phi_d = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
+		rho_avg_s = np.gradient(np.average(rho_ref, axis=0), z[0])
+		N_sq = -9.8/sw.dens0(28,-2)*np.average(rho_avg_s)
+		K.append(phi_d/N_sq)
+		K_avg.append(phi_d/(A*N_sq))
+	return (np.array(K), np.array(K_avg))
+
+def create_kappa_json(L_1, L_2):
 	a_s = ['005', '095', '102', '200']
 	c_s = ['005', '100', '105', '200']
-	domain = create_domain(L_1, L_2, 0, H)
-	Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(L_1, L_2, 0, H)
-	x, z = domain.grids(domain.dealias)
-	integrand = domain.new_field()
-	integrand.set_scales(domain.dealias)
-	K = {}
-	h = (H-z0)*conv(ab)
-	region = 0.5*(1-np.tanh((z-H+h*gen_sigma(ab)**2/(gen_sigma(ab)**2+4*(x-l)**2))/0.01))
-	integrand['g'] = region
-	L_z = de.operators.integrate(integrand, 'x').evaluate()['g'][0]
-	rho_ref, z_ref = sort_rho_z(rho, L_1, L_2, 0, H)
-	rho = rho[Ni_x:Nf_x, Ni_z:Nf_z]
-	deriv = 1/np.gradient(rho_ref, z[0], axis=1, edge_order=2)
-	rho_z = np.gradient(rho, z[0], axis=1, edge_order=2)
-	rho_x = np.gradient(rho, np.concatenate(x).ravel(), axis=0, edge_order=2)
-	nabla_rho = rho_x**2+rho_z**2
-	nabla_rho[nabla_rho < 1e-5] = 0 #Set possible grid errors to 0
-	integrand['g'] = -9.8*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*nabla_rho*region/(sw.dens0(28,-2))
-	phi_d = de.operators.integrate(integrand, 'x').evaluate()['g'][0]/L_z	
-	rho_avg_s = np.gradient(np.average(rho_ref, axis=0), z[0])
-	N_sq = -9.8/sw.dens0(28,-2)*np.average(rho_avg_s)
-	return phi_d/(N_sq)
+	times = [[220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450]]
+	kappa = {}
+	kappa_avg = {}
+	for i in range(len(a_s)):
+		for j in range(len(c_s)):
+			for k in range(70, times[i][j], 3):
+				l = 0
+				kappa_temp = 0
+				with h5py.File('new/data-mixingsim-a{0}c{1}-00/data-mixingsim-a{0}c{1}-00_s{2}.h5'.format(a_s[i], c_s[j], k), mode='r') as f:
+					kappa_temp += mixing_depth_calculate(f['tasks']['rho'][0], L_1, L_2, a_s[i])[0]
+					kappa_temp_avg += mixing_depth_calculate(f['tasks']['rho'][0], L_1, L_2, a_s[i])[1]		
+					l += 1
+			kappa[a_s[i]+c_s[j]] = kappa_temp/l
+			kappa_avg[a_s[i]+c_s[j]] = kappa_temp_avg/l
+			print(i,j)
+	json.dump(kappa, open('kappa_values_{0}-{1}.txt'.format(L_1, L_2), 'w'))
+	json.dump(kappa_avg, open('kappa_avg_values_{0}-{1}.txt'.format(L_1, L_2), 'w'))
+
+def create_Zm_json(L_1, L_2):
+	kappa_avg = json.load(open('kappa_avg_values_{0}-{1}.txt'.format(L_1, L_2)))
+	a_s = ['005', '095', '102', '200']
+	c_s = ['005', '100', '105', '200']
+	Zm = {}
+	for ab in a_s:
+		for cb in c_s:
+			v = np.argwhere(kappa_avg[ab+cb] >= 1)
+			Zm[ab+cb] = np.min(v)
+	json.dump(Zm, open('Zm_values_{0}-{1}.txt'.format(L_1, L_2), 'w'))
+
+def generate_new_set():
+	print('Building upstream Kappa json')
+	create_kappa_json(160, l)
+	print('Building upstream Zm json')
+	create_Zm_json(160, l)
+	print('Building downstream Kappa json')
+	create_kappa_json(l, L-40)
+	print('Building downstream Zm json')
+	create_Zm_json(l, L-40)
 
 def mixing_depth_figure(L_1, L_2, title):
 	plt.rcParams.update({'font.size': 12})
-	times = [[220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450]]
 	a_s = ['005', '095', '102', '200']
 	c_s = ['005', '100', '105', '200']
 	#colors = {"200": "#FF1300", "102": "#0CCAFF", "095": "#29E91F", "005": "#a67acf"}
 	colors = {'005': '#99c0ff', '095': '#3385ff', '102': '#0047b3', '200': '#000a1a'}
 	styles = {"200": "solid", "105": (0, (1,1)), "100": "dashed", "005": (0, (3, 1, 1, 1))}
-	rho_avg = {}
-	K = {}
 	z = np.linspace(0, H, Nz)
-	for i in range(len(a_s)):
-		for j in range(len(c_s)):
-			for k in range(70, times[i][j], 3):
-				l = 0
-				K_temp = 0
-				with h5py.File('new/data-mixingsim-a{0}c{1}-00/data-mixingsim-a{0}c{1}-00_s{2}.h5'.format(a_s[i], c_s[j], k), mode='r') as f:
-					K_temp += mixing_depth_calculate(f['tasks']['rho'][0], L_1, L_2, a_s[i])		
-					l += 1
-			K[a_s[i]+c_s[j]] = K_temp/l
-			print(i,j)
-	Z_m = {}
+	kappa = json.load(open('kappa_values.txt'))
+	Zm = json.load(open('Zm_values.txt'))
 	fig, ax1 = plt.subplots()
 	for ab in a_s[::-1]:
 		for cb in c_s:
-			v = np.argwhere(K[ab+cb] >= 1)
-			Z_m[ab+cb] = np.min(v)
-			ax1.plot(K[ab+cb], (H-z)/(H-z0), color=colors[ab], linestyle=styles[cb], linewidth=2)
+			ax1.plot(kappa[ab+cb], (H-z)/(H-z0), color=colors[ab], linestyle=styles[cb], linewidth=2)
 	ax1.set_xscale('log')
 	ax2 = ax1.twiny()
 	x = np.linspace(0, 120, Nx)
@@ -446,8 +475,8 @@ def mixing_depth_figure(L_1, L_2, title):
 	i = 0 
 	for ab in a_s:
 		for cb in c_s:
-			print(ab+cb, (H-Z_m[ab+cb]/Nz*H)/((H-z0)*conv(ab)))
-			plt.plot(c_v[cb], (H-Z_m[ab+cb]/Nz*H)/((H-z0)*conv(ab)), marker=markers[ab+cb], color=colors2[i], ms=7)
+			print(ab+cb, (H-Zm[ab+cb]/Nz*H)/((H-z0)*conv(ab)))
+			plt.plot(c_v[cb], (H-Zm[ab+cb]/Nz*H)/((H-z0)*conv(ab)), marker=markers[ab+cb], color=colors2[i], ms=7)
 		i += 1
 	for i in range(len(a_s)):
 		plt.plot([], [], marker='X', linestyle='None', color=colors2[i], label=labels[i])
@@ -473,51 +502,15 @@ def mixing_depth_figure(L_1, L_2, title):
 		#plt.title('Downstream')
 	plt.savefig('Max_mixing_depth_{0}-{1}.png'.format(L_1,L_2), dpi=600, bbox_inches='tight')
 	plt.clf()
-	return 
-	#Mixing+stirring figure
-	Nf_xu, Ni_xu, Nf_zu, Ni_zu = generate_modes(30, l, 0, H)
-	regimes = [['a200c200', 'a102c200', 'a095c200', 'a005c200'], ['a200c105', 'a102c105', 'a102c100'], ['a200c100', 'a102c100', 'a095c100'], ['a005c105', 'a005c100'], ['a200c005'], ['a102c005', 'a095c005', 'a005c005']]
-	titles = ['a) Vortex shedding', 'b) Bore & TD', 'c) Bore & MSD', 'd) MSD', 'e) Blocking', 'f) Lee waves']
-	colors = {'a200c005': '#ffb3b3', 'a200c100': '#ff4d4d', 'a200c105': '#e60000', 'a200c200': '#990000', 'a102c005': '#b4eefe', 'a102c100': '#4fd7fc', 'a102c105': '#03b2e2', 'a102c200': '#027797', 'a095c005': '#b8fdb4', 'a095c100': '#59fb51', 'a095c105': '#11e006', 'a095c200': '#0b9504', 'a005c005': '#dbb4fe', 'a005c100': '#ac4ffc', 'a005c105': '#7a03e2', 'a005c200': '#510297'}
-	rho_avgx_U = {}
-	rho_avgx_D = {}
-	z = np.linspace(-H, 0, Nz)
-	for key in rho_avg.keys():
-		sigma = gen_sigma(key[key.find('a')+1:key.find('c')])
-		Nf_xd, Ni_xd, Nf_zd, Ni_zd = generate_modes(l+sigma/2, L-30, 0, H)
-		rho_avgx_U[key] = np.average(rho_avg[key][Ni_xu:Nf_xu], axis=0)
-		rho_avgx_D[key] = np.average(rho_avg[key][Ni_xd:Nf_xd], axis=0)
-	fig, axs = plt.subplots(2,3, figsize=(6, 6))
-	for i, ax in enumerate(fig.axes):	
-		ax.plot(sw.dens0(-1*np.tanh((z+(H-z0))/0.1)+29, -2)-sw.dens0(28,-2), z/(H-z0), color='black', linestyle='dashed')		 
-		for j in range(len(regimes[i])):
-			rho_ref = np.reshape(-np.sort(-rho_avg[regimes[i][j]].flatten()), (Nx, Nz), order='F')
-			ax.plot(np.average(rho_ref, axis=0)-sw.dens0(28,-2), z/(H-z0), color=colors[regimes[i][j]], linestyle=(0, (1, 1)))
-			
-		for j in range(len(regimes[i])):
-			ax.plot(rho_avgx_D[regimes[i][j]]-sw.dens0(28,-2), z/(H-z0), color=colors[regimes[i][j]])	
-		ax.set_title(titles[i])
-		ax.set_xticks([0, 1, 2])
-		ax.set_ylim(-4,0)
-		ax.set_yticklabels(['4', '3', '2', '1', '0'])
-		if i == 0 or i == 3:
-			ax.set_ylabel("$z/z_0$")
-		if i > 2:
-			ax.set_xlabel("$\\rho-\\rho_1$")
-	plt.tight_layout()
-	axs[0, 0].plot([],[], linestyle='dashed', color='black', label='$\\rho_{{initial}}$')
-	axs[0,0].plot([],[], linestyle=(0, (1,1)), color='black', label='$\\rho_*$')
-	axs[0,0].plot([],[], color='black', label='$\\rho$')	
-	axs[0,0].legend(loc='lower left', prop={'size': 8})
-	fig.subplots_adjust(wspace=0.9)
-	plt.savefig('stirring_figure.png', dpi=300, bbox_inches='tight')
-	plt.clf()
+ 
+	
 		 
 
 
 
 
 #create_data_file()
+generate_new_set()
 mixing_depth_figure(160, l, 'Upstream')
 mixing_depth_figure(l, L-40, 'Downstream')
 #create_salt_file()

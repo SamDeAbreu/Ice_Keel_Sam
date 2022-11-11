@@ -75,6 +75,7 @@ sp = [[220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450], [220, 26
 a = ['a005', 'a095', 'a102', 'a200']
 c = ['c005', 'c100', 'c105', 'c200']
 labels_height = ['$\\eta=0.5$', '$\\eta=0.95$', '$\\eta=1.2$', '$\\eta=2.0$']
+labels_height_Fr = ['$Fr=0.5$', '$Fr=1.0$', '$Fr=1.5$', '$Fr=2.0$']
 labels_regime_up = ['Supercritical', 'Rarefaction',  'Solitary Waves', 'Blocking']
 labels_regime_down = ['Vortex Shedding', 'Stirred', 'Laminar Jump', 'Blocked', 'Lee Waves']
 markers_labels_up = ['P', 'D', 'o', 's']
@@ -291,9 +292,165 @@ def K_p_downstream():
     plt.savefig('Kp_Downstream_figure.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
-
-
+def K_p_upstream_var1():
+    #K_p Upstream var1: (Fr, eta) space with colormap
+    a_axis = [0.5, 0.95, 1.2, 2.0]
+    color_lines = []
+    marker_lines = []
+    for i in range(len(a)):
+        for j in range(len(c)):
+            plt.scatter(c_axis[j], a_axis[i], c=np.log10(avgs[i]['K_p_D'][j]/mu), s=70, vmin=0, vmax=4, cmap='plasma', marker=markers1[i][j], label=labels_height[i], zorder=10)    
+    plt.xlabel('Froude Number $Fr$')
+    plt.ylabel('Dimensionless Keel Draught $\\eta$')
+    plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
+    plt.grid()
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+    for i in range(4):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='black', label=labels_regime_up[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
+    plt.title('(a) Upstream')
+    plt.colorbar()
+    plt.gcf().set_size_inches(8,6, forward=True)
+    plt.savefig('Kp_Upstream_figure_var1.pdf', format='pdf', dpi=d, bbox_inches='tight')
+    plt.clf()
 colors2 = {'D': '#00b300', '^': '#0052cc', 's': '#6600cc', 'o': '#c908a6', 'P': '#ffa31a', '*': '#ff1a1a', 'p': 'black', 'd': '#800000'}
+
+def K_p_downstream_var1():
+    #K_p downstream var1: (Fr, eta) space with colormap
+    a_axis = [0.5, 0.95, 1.2, 2.0]
+    color_lines = []
+    marker_lines = []
+    for i in range(len(a)):
+        for j in range(len(c)):
+            plt.scatter(c_axis[j], a_axis[i], c=np.log10(avgs[i]['K_p_D'][j]/mu), s=70, vmin=0, vmax=4, cmap='plasma', marker=markers2[i][j], label=labels_height[i], zorder=10)    
+    plt.xlabel('Froude Number $Fr$')
+    plt.ylabel('Dimensionless Keel Draught $\\eta$')
+    plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
+    plt.grid()
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+    for i in range(4):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='black', label=labels_regime_down[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
+    plt.title('(a) Downstream')
+    plt.colorbar()
+    plt.gcf().set_size_inches(8,6, forward=True)
+    plt.savefig('Kp_Downstream_figure_var1.pdf', format='pdf', dpi=d, bbox_inches='tight')
+    plt.clf()
+colors2 = {'D': '#00b300', '^': '#0052cc', 's': '#6600cc', 'o': '#c908a6', 'P': '#ffa31a', '*': '#ff1a1a', 'p': 'black', 'd': '#800000'}
+
+def K_p_upstream_var2():
+    #K_p Upstream var2: (Fr, eta) space with marker sizes
+    a_axis = [0.5, 0.95, 1.2, 2.0]
+    color_lines = []
+    marker_lines = []
+    max_up = np.log10(avgs[-1]['K_p_U'][-1]/mu)
+    for i in range(len(a)):
+        for j in range(len(c)):
+            marker_size = np.exp(2.0*np.log10(avgs[i]['K_p_U'][j]/mu)/max_up) * 55
+            plt.scatter(c_axis[j], a_axis[i], c=np.log10(avgs[i]['K_p_D'][j]/mu), s=marker_size, vmin=0, vmax=4, cmap='plasma', marker=markers1[i][j], label=labels_height[i], zorder=10)    
+    plt.xlabel('Froude Number $Fr$')
+    plt.ylabel('Dimensionless Keel Draught $\\eta$')
+    plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
+    plt.grid()
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+    for i in range(4):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='black', label=labels_regime_up[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
+    plt.title('(a) Upstream')
+    plt.gcf().set_size_inches(8,6, forward=True)
+    plt.savefig('Kp_Upstream_figure_var2.pdf', format='pdf', dpi=d, bbox_inches='tight')
+    plt.clf()
+colors2 = {'D': '#00b300', '^': '#0052cc', 's': '#6600cc', 'o': '#c908a6', 'P': '#ffa31a', '*': '#ff1a1a', 'p': 'black', 'd': '#800000'}
+
+def K_p_downstream_var2():
+    #K_p downstream var1: (Fr, eta) space with marker sizes
+    a_axis = [0.5, 0.95, 1.2, 2.0]
+    color_lines = []
+    marker_lines = []
+    max_down = np.log10(avgs[-1]['K_p_D'][-1]/mu)
+    for i in range(len(a)):
+        for j in range(len(c)):
+            marker_size = np.exp(2.0*np.log10(avgs[i]['K_p_U'][j]/mu)/max_down) * 55
+            plt.scatter(c_axis[j], a_axis[i], c=np.log10(avgs[i]['K_p_D'][j]/mu), s=marker_size, vmin=0, vmax=4, cmap='plasma', marker=markers2[i][j], label=labels_height[i], zorder=10)    
+    plt.xlabel('Froude Number $Fr$')
+    plt.ylabel('Dimensionless Keel Draught $\\eta$')
+    plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
+    plt.grid()
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+    for i in range(4):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='black', label=labels_regime_down[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
+    plt.title('(a) Downstream')
+    plt.colorbar()
+    plt.gcf().set_size_inches(8,6, forward=True)
+    plt.savefig('Kp_Downstream_figure_var2.pdf', format='pdf', dpi=d, bbox_inches='tight')
+    plt.clf()
+colors2 = {'D': '#00b300', '^': '#0052cc', 's': '#6600cc', 'o': '#c908a6', 'P': '#ffa31a', '*': '#ff1a1a', 'p': 'black', 'd': '#800000'}
+
+def K_p_upstream_var3():
+    #K_p Upstream var3: Horizontal axis is eta and coloring is Fr
+    a_axis = [0.5, 0.95, 1.2, 2.0]
+    color_lines = []
+    marker_lines = []
+    for i in range(len(a)):
+        for j in range(len(c)):
+            plt.plot(a_axis[i], avgs[i]['K_p_U'][j]/mu, marker=markers1[i][j], linestyle='None', color=colors1[j], label=labels_height_Fr[j], ms=12)    
+    plt.xlabel('Dimensionless Keel Draught $\\eta$')
+    plt.ylabel(r'Upstream Diapycnal Diffusivity $K_{{\rho}}^U/\mu$')
+    plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
+    plt.grid()
+    plt.yscale('log', nonposy='clip')
+    plt.ylim(plt.ylim()[0], 1e5)
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height_Fr[i]))
+    for i in range(4):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='black', label=labels_regime_up[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
+    plt.title('(a) Upstream')
+    plt.gcf().set_size_inches(8,6, forward=True)
+    plt.savefig('Kp_Upstream_figure_var3.pdf', format='pdf', dpi=d, bbox_inches='tight')
+    plt.clf()
+
+def K_p_downstream_var3():
+    #K_p Upstream var3: Horizontal axis is eta and coloring is Fr
+    a_axis = [0.5, 0.95, 1.2, 2.0]
+    color_lines = []
+    marker_lines = []
+    for i in range(len(a)):
+        for j in range(len(c)):
+            plt.plot(a_axis[i], avgs[i]['K_p_D'][j]/mu, marker=markers2[i][j], linestyle='None', color=colors1[j], label=labels_height_Fr[j], ms=12)    
+    plt.xlabel('Dimensionless Keel Draught $\\eta$')
+    plt.ylabel(r'Upstream Diapycnal Diffusivity $K_{{\rho}}^U/\mu$')
+    plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
+    plt.grid()
+    plt.yscale('log', nonposy='clip')
+    plt.ylim(plt.ylim()[0], 1e5)
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height_Fr[i]))
+    for i in range(4):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_down[i], linestyle='None', color='black', label=labels_regime_down[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, prop={'size': 10}, loc='upper left', ncol=2, handleheight=0.5)
+    plt.title('(a) Downstream')
+    plt.gcf().set_size_inches(8,6, forward=True)
+    plt.savefig('Kp_Downstream_figure_var3.pdf', format='pdf', dpi=d, bbox_inches='tight')
+    plt.clf()
+
 def regime_upstream():
     #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
     #Regime layout upstream
@@ -406,6 +563,76 @@ def joint_regime_ms():
     plt.savefig('regime_layout_ms.png', dpi=d, bbox_inches='tight')
     plt.clf()
 
+def Fr(z0, Si, Sf, U=0.2):
+        dB = 9.8*(sw.dens0(Sf, -2) - sw.dens0(Si, -2))/sw.dens0(Si, -2)
+        return U/np.sqrt(z0*dB)
+def eta(z0, h):
+    return h/z0
+def sigma_rho(S, S_sigma):
+    return S_sigma*np.sqrt((0.8)**2+9/4*(0.005)**2*S+4*(0.0004)**2*S**2)
+def sigma_Fr(z0, Si, Sf, z0_sigma, Si_sigma, Sf_sigma, U=0.2):
+    rhoi_sigma = sigma_rho(Si, Si_sigma)
+    rhof_sigma = sigma_rho(Sf, Sf_sigma)
+    rhoi = ufloat(sw.dens0(Si, -2), rhoi_sigma)
+    rhof = ufloat(sw.dens0(Sf, -2), rhof_sigma)
+    z0u = ufloat(z0, z0_sigma)
+    dB = 9.8*(rhof-rhoi)/rhoi
+    #dB = 9.8*(sw.dens0(Sf, -2) - sw.dens0(Si, -2))/sw.dens0(Si, -2)
+    #dB_sigma = dB*np.sqrt((rhoi_sigma/sw.dens0(Si,-2))**2+(rhoi_sigma**2+rhof_sigma**2)/(sw.dens0(Sf,-2)-sw.dens0(Si,-2))**2)
+    Fr = U/(z0u*dB)**0.5
+    #z0dB_sigma = z0*dB*np.sqrt((z0_sigma/z0)**2+(dB_sigma/dB)**2)
+    print(Fr.std_dev)
+    return Fr.std_dev
+    #return U/2*(z0*dB)**(-3/2)*z0dB_sigma
+
+def arctic_plot(h, color1, color2):
+    S_values = {'Chukchi Sea': {'Si': 29.1, 'Si_u': 1.00, 'Sf': 30.1, 'Sf_u': 0.1}, 
+                'Southern Beaufort Sea': {'Si': 28.0, 'Si_u': 3.8, 'Sf': 30.5, 'Sf_u': 2.5}, 
+                'Canada Basin': {'Si': 27.2, 'Si_u': 1.8, 'Sf': 30.1, 'Sf_u': 0.1}, 
+                'Eurasian Basin': {'Si': 33.4, 'Si_u': 0.8, 'Sf': 33.8, 'Sf_u': 0.7}, 
+                'Barents Sea': {'Si': 33.1, 'Si_u': 0.3, 'Sf': 34.5, 'Sf_u': 0.03}} #[Si, Si_error, Sf, Sf_error]
+    z0_values = {'Chukchi Sea': {'z0': 12.3, 'z0_u': 4}, 
+                'Southern Beaufort Sea': {'z0': 8.5, 'z0_u': 4.5}, 
+                'Canada Basin': {'z0': 8.9, 'z0_u': 3.9},  
+                'Eurasian Basin': {'z0': 22.3, 'z0_u': 11.3}, 
+                'Barents Sea': {'z0': 17.7, 'z0_u': 12.2}}
+    S_trends = {'Chukchi Sea': {'Si_t': 0.02, 'Sf_t': -0.07}, #[Sf_trend, Si_trend]
+                'Southern Beaufort Sea': {'Si_t': 0.29, 'Sf_t': -0.04}, 
+                'Canada Basin': {'Si_t': -0.11, 'Sf_t': -0.19}, 
+                'Eurasian Basin': {'Si_t': -0.05, 'Sf_t': -0.07}, 
+                'Barents Sea': {'Si_t': 0.02, 'Sf_t': 0.02,}} #Use summer trend for winter
+    z0_trends = {'Chukchi Sea': {'z0_t': -0.43}, #[z0_winter_trend, z0_sumer_trend], using Winter trend
+                'Southern Beaufort Sea': {'z0_t': 0.33}, 
+                'Canada Basin': {'z0_t': -0.33}, 
+                'Eurasian Basin': {'z0_t': -0.19}, 
+                'Barents Sea': {'z0_t': 0.51}} #Barrents taken from ice free summer
+    labels_region = {'Chukchi Sea': '*1', 'Southern Beaufort Sea': '2', 'Canada Basin': '3', 'Eurasian Basin': '4', 'Barents Sea': '*5'}
+    #Summer
+    for key in S_values.keys():
+        print(key)
+        value_Fr = Fr(z0_values[key]['z0'], S_values[key]['Si'], S_values[key]['Sf'])
+        value_eta = eta(z0_values[key]['z0'], h=h)
+        Fr_er = sigma_Fr(z0_values[key]['z0'], S_values[key]['Si'], S_values[key]['Sf'], z0_values[key]['z0_u'], S_values[key]['Si_u'], S_values[key]['Sf_u'])
+        eta_er = eta(z0_values[key]['z0'], h=h)/z0_values[key]['z0']*z0_values[key]['z0_u']
+        plt.gca().add_patch(patches.FancyBboxPatch(xy=(value_Fr-Fr_er, value_eta-eta_er), width=2*Fr_er, height=2*eta_er, linewidth=1, color=color2, fill='false', mutation_scale=0.05, alpha=0.15))
+        scale = 1
+        years = 5
+        if key == 'Barents Sea': # Use winter salinity trend for summer salinity since summer is unavail
+            Fr_diff = Fr(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], S_values[key]['Si']+years*S_trends[key]['Si_t'], S_values[key]['Sf']+years*S_trends[key]['Sf_t'], U=0.2*(1+0.009*years))
+            eta_diff = eta(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], h=h)
+            plt.arrow(x=value_Fr, y=value_eta, dx=Fr_diff-value_Fr, dy=eta_diff-value_eta, linestyle='-', linewidth=2.8, length_includes_head=True, zorder=3, head_width=0.03)
+        elif key == 'Chukchi Sea': # Use winter MLD trend for summer MLD since summer is unavail
+            Fr_diff = Fr(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], S_values[key]['Si']+years*S_trends[key]['Si_t'], S_values[key]['Sf']+years*S_trends[key]['Sf_t'], U=0.2*(1+0.009*years))
+            eta_diff = eta(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], h=h)
+            plt.arrow(x=value_Fr, y=value_eta, dx=Fr_diff-value_Fr, dy=eta_diff-value_eta, linestyle='-', linewidth=2.8, length_includes_head=True, zorder=3, head_width=0.03)
+        else:
+            Fr_diff = Fr(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], S_values[key]['Si']+years*S_trends[key]['Si_t'], S_values[key]['Sf']+years*S_trends[key]['Sf_t'], U=0.2*(1+0.009*years))
+            eta_diff = eta(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], h=h)
+            plt.arrow(x=value_Fr, y=value_eta, dx=Fr_diff-value_Fr, dy=eta_diff-value_eta, linewidth=2.8, length_includes_head=True, zorder=3, head_width=0.03)
+        plt.text(value_Fr, value_eta, labels_region[key], fontsize=9.5, weight='bold', ha='center', va='center', zorder=10)
+        plt.plot(value_Fr, value_eta, marker='s', color=color1, ms=13.5, zorder=6)
+    
+
 def joint_regime_arctic():
     #Joint regime Arctic layout 
     shift = 0
@@ -434,85 +661,21 @@ def joint_regime_arctic():
     first_legend = plt.legend(handles=[line1, line2, line3, line4], loc='center right', bbox_to_anchor=(1.305, 0.73), prop={'size': 11}, fancybox=True, shadow=True)
     plt.gca().add_artist(first_legend)
     plt.legend(handles=[line5, line6, line7, line8, line9], loc='center right', bbox_to_anchor=(1.32, 0.25), prop={'size': 11}, fancybox=True, shadow=True)
-    plt.xlabel('Froude Number $Fr$ (Keel speed / Stratification strength)')
-    plt.ylabel('Dimensionless Keel Depth $\\eta$')
+    plt.xlabel('Froude Number $Fr$')
+    plt.ylabel('Dimensionless Keel Draught $\\eta$')
     plt.text(2.90, 2.15, 'Upstream', ha='center', va='center')
     plt.text(2.90, 1, 'Downstream', ha='center', va='center')
-    plt.xlim(0,2.5)
-    plt.ylim(0,2.5)
+    plt.xlim(0,2.7)
+    plt.ylim(0,2.7)
     plt.grid(zorder=0)
+    arctic_plot(h=7.45, color1='#cc0909', color2='red')
+    arctic_plot(h=7.45*2.5, color1='cyan', color2='cyan')
     #Arctic stuff
-    def Fr(z0, Si, Sf, U=0.2):
-        dB = 9.8*(sw.dens0(Sf, -2) - sw.dens0(Si, -2))/sw.dens0(Si, -2)
-        return U/np.sqrt(z0*dB)
-    def eta(z0, h=7.45):
-        return h/z0
-    def sigma_rho(S, S_sigma):
-        return S_sigma*np.sqrt((0.8)**2+9/4*(0.005)**2*S+4*(0.0004)**2*S**2)
-    def sigma_Fr(z0, Si, Sf, z0_sigma, Si_sigma, Sf_sigma, U=0.2):
-        rhoi_sigma = sigma_rho(Si, Si_sigma)
-        rhof_sigma = sigma_rho(Sf, Sf_sigma)
-        rhoi = ufloat(sw.dens0(Si, -2), rhoi_sigma)
-        rhof = ufloat(sw.dens0(Sf, -2), rhof_sigma)
-        z0u = ufloat(z0, z0_sigma)
-        dB = 9.8*(rhof-rhoi)/rhoi
-        #dB = 9.8*(sw.dens0(Sf, -2) - sw.dens0(Si, -2))/sw.dens0(Si, -2)
-        #dB_sigma = dB*np.sqrt((rhoi_sigma/sw.dens0(Si,-2))**2+(rhoi_sigma**2+rhof_sigma**2)/(sw.dens0(Sf,-2)-sw.dens0(Si,-2))**2)
-        Fr = U/(z0u*dB)**0.5
-        #z0dB_sigma = z0*dB*np.sqrt((z0_sigma/z0)**2+(dB_sigma/dB)**2)
-        print(Fr.std_dev)
-        return Fr.std_dev
-        #return U/2*(z0*dB)**(-3/2)*z0dB_sigma
     # Winter data is March data, likewise summer is July. All std and averages are taken from these two months
     # ML depth is ice covered July data
     # Winter ML salinity is April ice covered data
     # Summer ML salinity is July ice covered data
     # We reject Makaraov data as PFW did
-    S_values = {'Chukchi Sea': {'Si': 29.1, 'Si_u': 1.00, 'Sf': 30.1, 'Sf_u': 0.1}, 
-                'Southern Beaufort Sea': {'Si': 28.0, 'Si_u': 3.8, 'Sf': 30.5, 'Sf_u': 2.5}, 
-                'Canada Basin': {'Si': 27.2, 'Si_u': 1.8, 'Sf': 30.1, 'Sf_u': 0.1}, 
-                'Eurasian Basin': {'Si': 33.4, 'Si_u': 0.8, 'Sf': 33.8, 'Sf_u': 0.7}, 
-                'Barents Sea': {'Si': 33.1, 'Si_u': 0.3, 'Sf': 34.5, 'Sf_u': 0.03}} #[Si, Si_error, Sf, Sf_error]
-    z0_values = {'Chukchi Sea': {'z0': 12.3, 'z0_u': 4}, 
-                'Southern Beaufort Sea': {'z0': 8.5, 'z0_u': 4.5}, 
-                'Canada Basin': {'z0': 8.9, 'z0_u': 3.9},  
-                'Eurasian Basin': {'z0': 22.3, 'z0_u': 11.3}, 
-                'Barents Sea': {'z0': 17.7, 'z0_u': 12.2}}
-    S_trends = {'Chukchi Sea': {'Si_t': 0.02, 'Sf_t': -0.07}, #[Sf_trend, Si_trend]
-                'Southern Beaufort Sea': {'Si_t': 0.29, 'Sf_t': -0.04}, 
-                'Canada Basin': {'Si_t': -0.11, 'Sf_t': -0.19}, 
-                'Eurasian Basin': {'Si_t': -0.05, 'Sf_t': -0.07}, 
-                'Barents Sea': {'Si_t': 0.02, 'Sf_t': 0.02,}} #Use summer trend for winter
-    z0_trends = {'Chukchi Sea': {'z0_t': -0.43}, #[z0_winter_trend, z0_sumer_trend], using Winter trend
-                'Southern Beaufort Sea': {'z0_t': 0.33}, 
-                'Canada Basin': {'z0_t': -0.33}, 
-                'Eurasian Basin': {'z0_t': -0.19}, 
-                'Barents Sea': {'z0_t': 0.51}} #Barrents taken from ice free summer
-    labels_region = {'Chukchi Sea': '*1', 'Southern Beaufort Sea': '2', 'Canada Basin': '3', 'Eurasian Basin': '4', 'Barents Sea': '*5'}
-    #Summer
-    for key in S_values.keys():
-        print(key)
-        value_Fr = Fr(z0_values[key]['z0'], S_values[key]['Si'], S_values[key]['Sf'])
-        value_eta = eta(z0_values[key]['z0'])
-        Fr_er = sigma_Fr(z0_values[key]['z0'], S_values[key]['Si'], S_values[key]['Sf'], z0_values[key]['z0_u'], S_values[key]['Si_u'], S_values[key]['Sf_u'])
-        eta_er = eta(z0_values[key]['z0'])/z0_values[key]['z0']*z0_values[key]['z0_u']
-        plt.gca().add_patch(patches.FancyBboxPatch(xy=(value_Fr-Fr_er, value_eta-eta_er), width=2*Fr_er, height=2*eta_er, linewidth=1, color='red', fill='false', mutation_scale=0.05, alpha=0.20))
-        scale = 1
-        years = 5
-        if key == 'Barents Sea': # Use winter salinity trend for summer salinity since summer is unavail
-            Fr_diff = Fr(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], S_values[key]['Si']+years*S_trends[key]['Si_t'], S_values[key]['Sf']+years*S_trends[key]['Sf_t'], U=0.2*(1+0.009*years))
-            eta_diff = eta(z0_values[key]['z0']+years*z0_trends[key]['z0_t'])
-            plt.arrow(x=value_Fr, y=value_eta, dx=Fr_diff-value_Fr, dy=eta_diff-value_eta, linestyle='-', linewidth=2.8, length_includes_head=True, zorder=3, head_width=0.03)
-        elif key == 'Chukchi Sea': # Use winter MLD trend for summer MLD since summer is unavail
-            Fr_diff = Fr(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], S_values[key]['Si']+years*S_trends[key]['Si_t'], S_values[key]['Sf']+years*S_trends[key]['Sf_t'], U=0.2*(1+0.009*years))
-            eta_diff = eta(z0_values[key]['z0']+years*z0_trends[key]['z0_t'])
-            plt.arrow(x=value_Fr, y=value_eta, dx=Fr_diff-value_Fr, dy=eta_diff-value_eta, linestyle='-', linewidth=2.8, length_includes_head=True, zorder=3, head_width=0.03)
-        else:
-            Fr_diff = Fr(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], S_values[key]['Si']+years*S_trends[key]['Si_t'], S_values[key]['Sf']+years*S_trends[key]['Sf_t'], U=0.2*(1+0.009*years))
-            eta_diff = eta(z0_values[key]['z0']+years*z0_trends[key]['z0_t'])
-            plt.arrow(x=value_Fr, y=value_eta, dx=Fr_diff-value_Fr, dy=eta_diff-value_eta, linewidth=2.8, length_includes_head=True, zorder=3, head_width=0.03)
-        plt.text(value_Fr, value_eta, labels_region[key], fontsize=9.5, weight='bold', ha='center', va='center', zorder=10)
-        plt.plot(value_Fr, value_eta, marker='s', color='#cc0909', ms=13.5, zorder=6)
     #plt.text(Fr1-0.03, eta1+0.01, '*', fontsize=8, weight='bold', ha='center', va='center', zorder=10)
     #plt.imshow([[0.6,0.6], [0.7, 0.7], [0.8, 0.8]], interpolation='bicubic', vmin=0.6, vmax=0.8, extent=(0, 2.5, 0, 2.5), alpha=0.3)
     plt.gcf().set_size_inches(8,6, forward=True)
@@ -593,7 +756,7 @@ def K_p_time():
     plt.clf()
 
 def test_heatmap():
-    with h5py.File('regime_files/data-mixingsim-a200c200-00_s320.h5', mode='r') as f:
+    with h5py.File('regime_files/data-mixingsim-a005c005-00_s180.h5', mode='r') as f:
         L_1 = 160
         L_2 = 920
         Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(L_1, L_2, 0, 80)
@@ -615,8 +778,9 @@ def test_heatmap():
         integrand = -9.8*np.nan_to_num(1/deriv2, posinf=0, neginf=0, nan=0)*(nabla_rho)/(sw.dens0(28,-2))
         N_sq = -9.8/sw.dens0(28,-2)*np.average(np.average(np.gradient(rho_ref, z[0], axis=1), axis=0))
         #f = 0.5*(1+np.tanh((z-32+16*sigma**2/(sigma**2+4*(x-l)**2))/0.01))
+        Fr = abs(f['tasks']['u'][0][Ni_x:Nf_x, Ni_z:Nf_z])/np.sqrt(8*9.8*(rho-sw.dens0(28,-2))/sw.dens0(28,-2))
         fig_j, ax_j = plt.subplots(figsize=(16,12))
-        im_j = ax_j.imshow(np.transpose(f['tasks']['w'][0]), vmin=-0.3, vmax=0.3, origin='lower', cmap='bwr', extent=(L_1/(H-z0), L_2/(H-z0), -80/(H-z0), 0))
+        im_j = ax_j.imshow(np.transpose(Fr), vmin=0, vmax=2, origin='lower', cmap='bwr', extent=(L_1/(H-z0), L_2/(H-z0), -80/(H-z0), 0))
         plt.ylim(plt.ylim()[::1])
         plt.xlim(L_1/(H-z0), L_2/(H-z0))
         fig_j.colorbar(im_j, orientation='horizontal', label='$dz_*/d\\rho |\\nabla\\rho|^2$')
@@ -631,10 +795,10 @@ def test_heatmap():
 
         cyclicnorm = CyclicNormalize(cmin=100, cmax=100.2, vmin=np.min(rho), vmax=np.max(rho))
 
-        fig, ax = plt.subplots(figsize=(12,12))
-        pcm = ax.imshow(np.transpose(integrand/N_sq), vmin=1e1, vmax=1e3, cmap='plasma', origin='lower', norm=cyclicnorm, extent=(0, L/(H-z0), -H/(H-z0), 0))
-        fig.colorbar(pcm, orientation='horizontal')
-        fig.set_dpi(d)
+        #fig, ax = plt.subplots(figsize=(12,12))
+        #pcm = ax.imshow(np.transpose(integrand/N_sq), vmin=1e1, vmax=1e3, cmap='plasma', origin='lower', norm=cyclicnorm, extent=(0, L/(H-z0), -H/(H-z0), 0))
+        #fig.colorbar(pcm, orientation='horizontal')
+        #fig.set_dpi(d)
         plt.savefig('testing.png')
         plt.tight_layout()
         plt.clf() 
@@ -664,12 +828,12 @@ def boundary_layer():
         for j in range(len(N_sq)):
             z_Nvalues.append(-np.linspace(0, H, Nz)[Nz-max_ind[j]])
 
-        pcm = axes[i].imshow(gaussian_filter(np.transpose(k[i]), 3), vmin=-0.2, vmax=0.2, cmap='bwr', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
+        pcm = axes[i].imshow(gaussian_filter(np.transpose(k[i]), 3.5), vmin=-0.2, vmax=0.2, cmap='bwr', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
         axes[i].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(2)/(H-z0), facecolor="white", zorder=10)
         axes[i].plot(np.linspace(0, L, Nx)/(H-z0), keel(2)/(H-z0), linewidth=0.5, color='black')
         print(np.transpose(u[i])[300])
-        axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(u[i]), np.transpose(w[i]), color='black', density=3.1, linewidth=0.4, arrowsize=1)
-        axes[i].plot(np.linspace(0, L, Nx)/(H-z0), np.array(z_Nvalues)/(H-z0), linewidth=2.2, color='black')
+        #axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(u[i]), np.transpose(w[i]), color='black', density=3.1, linewidth=0.4, arrowsize=1)
+        axes[i].plot(np.linspace(0, L, Nx)/(H-z0), np.array(z_Nvalues)/(H-z0), linewidth=2.5, color='black')
         axes[i].set_xlim(60, 75)
         axes[i].set_ylim(0, -4)
         axes[i].set_ylim(axes[i].get_ylim()[::-1])
@@ -680,7 +844,6 @@ def boundary_layer():
         axes[i].set_aspect('auto')
         axes[i].text(73.7, -0.75, titles[i], fontsize=18, weight='bold', ha='center', va='center', zorder=10)
     axes[1].set_xlabel('$x/z_0$')
-    axes[0].set_xticklabels([])
     fig.subplots_adjust(right=0.8, hspace=0.15)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     cbar = fig.colorbar(pcm, cax=cbar_ax)
@@ -695,6 +858,7 @@ def bore():
     us = []
     ws = []
     vs = []
+    qs = []
     rhos = []
     titles = ['(a)', '(b)']
     for fi in ['regime_files/data-mixingsim-a200c100-00_s119.h5', 'regime_files/data-mixingsim-a200c100-00_s179.h5']:
@@ -702,6 +866,7 @@ def bore():
             us.append(f['tasks']['u'][0])
             ws.append(f['tasks']['w'][0])
             vs.append(f['tasks']['u'][0]**2+f['tasks']['w'][0]**2)
+            qs.append(f['tasks']['vorticity'][0])
             rhos.append(f['tasks']['rho'][0])
     fig, axes = plt.subplots(2,1, sharex='col')
     for i in range(len(axes)):
@@ -711,11 +876,12 @@ def bore():
         for j in range(len(N_sq)):
             z_Nvalues.append(-np.linspace(0, H, Nz)[Nz-max_ind[j]])
 
-        pcm = axes[i].imshow(np.transpose(us[i])/0.69, vmin=-0.8, vmax=0.8, cmap='bwr', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
-        axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us[i]), np.transpose(ws[i]), color='black', density=2, linewidth=0.35, arrowsize=0.35)
+        #pcm = axes[i].imshow(np.transpose(us[i])/0.69, vmin=-0.8, vmax=0.8, cmap='bwr', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
+        pcm = axes[i].imshow(gaussian_filter(np.transpose(qs[i]), 3), vmin=-0.2, vmax=0.2, cmap='bwr', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
+        #axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us[i]), np.transpose(ws[i]), color='black', density=2, linewidth=0.35, arrowsize=0.35)
         axes[i].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(2)/(H-z0), facecolor="white", zorder=10)
         axes[i].plot(np.linspace(0, L, Nx)/(H-z0), keel(2)/(H-z0), linewidth=0.5, color='black') 
-        axes[i].plot(np.linspace(0, L, Nx)/(H-z0), np.array(z_Nvalues)/(H-z0), linewidth=2.3, color='black')
+        axes[i].plot(np.linspace(0, L, Nx)/(H-z0), np.array(z_Nvalues)/(H-z0), linewidth=2.5, color='black')
         axes[i].set_xlim(20, 80)
         axes[i].set_ylim(0, -4)
         axes[i].set_ylim(axes[i].get_ylim()[::-1])
@@ -729,7 +895,7 @@ def bore():
     fig.subplots_adjust(right=0.8, hspace=0.15)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     cbar = fig.colorbar(pcm, cax=cbar_ax)
-    cbar.set_label("$u/U$")
+    cbar.set_label("Vorticity $q$ (s$^{{-1}}$)")
     plt.gcf().set_size_inches(8,6, forward=True)
     plt.savefig('bore_figure.pdf', format='pdf', bbox_inches='tight')
     plt.clf()
@@ -739,7 +905,9 @@ def regime_graphic():
     titles1 = ['(a) Supercritical', '(b) Rarefaction', '(c) Solitary Waves', '(d) Blocking']
     titles2 = ['(a) Vortex Shedding', '(b) Stirred', '(c) Laminar Jump', '(d) Blocked', '(e) Lee Waves']
     a_s = [2, 1.2, 1.2, 2]
+    c_s = [2, 0.5, 1, 0.5]
     a_s2 = [2, 0.95, 0.5, 2, 0.5]
+    c_s2 = [2, 1.5, 1, 0.5, 0.5]
     fs1 = ['regime_files/data-mixingsim-a200c200-00_s160.h5', #
         'regime_files/data-mixingsim-a102c005-00_s70.h5',
         'regime_files/data-mixingsim-a102c100-00_s180.h5',
@@ -781,9 +949,15 @@ def regime_graphic():
             pcm = axes[i, j].imshow(np.transpose(rhos1[k])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
             #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
             axes[i, j].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(a_s[k])/(H-z0), facecolor="white", zorder=10)
+            speed = np.sqrt(np.transpose(us1[k])**2+np.transpose(ws1[k])**2)
+            U = c_s[k]*np.sqrt((H-z0)*DB)
+            lw = 2.2*speed/U
             axes[i, j].plot(np.linspace(0, L, Nx)/(H-z0), keel(a_s[k])/(H-z0), linewidth=0.5, color='black')
-            c = axes[i, j].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us1[k]), np.transpose(ws1[k]), color='red', density=1.3, linewidth=1.2, arrowsize=0.45)
-            c.lines.set_alpha(0.2)
+            c = axes[i, j].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us1[k]), np.transpose(ws1[k]), color='red', density=1.3, linewidth=lw, arrowsize=0.8, arrowstyle='->')
+            c.lines.set_alpha(0.15)
+            for x in axes[i, j].get_children():
+                if type(x) == matplotlib.patches.FancyArrowPatch:
+                    x.set_alpha(0.15)
             axes[i, j].set_xticks([25, 35, 45, 55, 65, 75])
             axes[i, j].set_yticklabels(['4', '3', '2', '1', '0'])
             axes[i, j].set_xlim(20,75)
@@ -822,8 +996,14 @@ def regime_graphic():
         pcm = axes[i].imshow(np.transpose(rhos2[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
         axes[i].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(a_s2[i])/(H-z0), facecolor="white", zorder=10)
         axes[i].plot(np.linspace(0, L, Nx)/(H-z0), keel(a_s2[i])/(H-z0), linewidth=0.5, color='black')
-        c = axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us2[i]), np.transpose(ws2[i]), color='red', density=1.3, linewidth=1.2, arrowsize=0.45)
-        c.lines.set_alpha(0.2)
+        speed = np.sqrt(np.transpose(us2[i])**2+np.transpose(ws2[i])**2)
+        U = c_s2[i]*np.sqrt((H-z0)*DB)
+        lw = 2*speed/U
+        c = axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us2[i]), np.transpose(ws2[i]), color='red', density=1.23, linewidth=lw, arrowsize=0.8, arrowstyle='->')
+        c.lines.set_alpha(0.15)
+        for x in axes[i].get_children():
+            if type(x) == matplotlib.patches.FancyArrowPatch:
+                x.set_alpha(0.15)
         axes[i].set_xticks([75, 85, 95, 105, 115])
         axes[i].set_yticklabels(['4', '3', '2', '1', '0'])
         axes[i].set_xlim(75,115)
@@ -846,10 +1026,17 @@ def regime_graphic():
     plt.clf() 
 
 # RUN
-K_p_upstream()
-K_p_downstream()
-joint_regime()
-joint_regime_arctic()
-bore()
-boundary_layer()
-regime_graphic()
+#K_p_upstream()
+#K_p_upstream_var1()
+#K_p_downstream_var1()
+#K_p_upstream_var2()
+#K_p_downstream_var2()
+#K_p_upstream_var3()
+#K_p_downstream_var3()
+#K_p_downstream()
+#test_heatmap()
+#joint_regime()
+#joint_regime_arctic()
+#bore()
+#boundary_layer()
+#regime_graphic()
