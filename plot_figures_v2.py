@@ -90,11 +90,11 @@ avgs = [{}, {}, {}, {}] #a=0.5,0.9,1.2,2  Heights{MLD: [speeds], KED: [speeds], 
 MLD_std = [[], [], [], []]
 for i in range(len(a)):
     for j in range(len(c)):
-        f = open('potentialdata_{0}_{1}-{2}.txt'.format(a[i]+c[j], "70", sp[i][j]), 'r')
+        f = open('potentialdata_{0}T_{1}-{2}.txt'.format(a[i]+c[j], "0", sp[i][j]), 'r')
         temp = f.readline()
         MLD_std[i].append(float(temp[:temp.find('\\')]))
         f.close()
-        data[i].append(np.loadtxt('potentialdata_{0}_{1}-{2}.txt'.format(a[i]+c[j], "70", sp[i][j]), unpack=True, skiprows=2))
+        data[i].append(np.loadtxt('potentialdata_{0}T_{1}-{2}.txt'.format(a[i]+c[j], "0", sp[i][j]), unpack=True, skiprows=2))
         
 
 for i in range(len(a)):
@@ -1026,14 +1026,14 @@ def regime_graphic():
     plt.clf() 
 
 # RUN
-#K_p_upstream()
+K_p_upstream()
 #K_p_upstream_var1()
 #K_p_downstream_var1()
 #K_p_upstream_var2()
 #K_p_downstream_var2()
 #K_p_upstream_var3()
 #K_p_downstream_var3()
-#K_p_downstream()
+K_p_downstream()
 #test_heatmap()
 #joint_regime()
 #joint_regime_arctic()
