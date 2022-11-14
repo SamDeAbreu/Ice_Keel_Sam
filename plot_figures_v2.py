@@ -451,6 +451,30 @@ def K_p_downstream_var3():
     plt.savefig('Kp_Downstream_figure_var3.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
+def K_p_upstream_var4():
+    #K_p upstream var4: (Fr, eta) space with height
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    a_axis = [0.5, 0.95, 1.2, 2.0] #eta
+    block_width = 0.05
+    for i in range(len(a)):
+        for j in range(len(c)):
+            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_width, np.log10(avgs[i]['K_p_U'][j]/mu), shade=True)
+    fig.savefig('Kp_Upstream_figure_var4.pdf', format='pdf')
+    plt.clf()
+
+def K_p_downstream_var4():
+    #K_p downstream var4: (Fr, eta) space with height
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    a_axis = [0.5, 0.95, 1.2, 2.0] #eta
+    block_width = 0.05
+    for i in range(len(a)):
+        for j in range(len(c)):
+            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_width, np.log10(avgs[i]['K_p_D'][j]/mu), shade=True)
+    fig.savefig('Kp_Downstream_figure_var4.pdf', format='pdf')
+    plt.clf()
+
 def regime_upstream():
     #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
     #Regime layout upstream
