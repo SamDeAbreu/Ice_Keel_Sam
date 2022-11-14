@@ -77,12 +77,6 @@ def plot_density_contours_vorticity(rho, q, a, c, T, N, folder):
     fig, ax = plt.subplots(figsize=(8,4))
     rho1 = sw.dens0(28,-2)
     rho2 = sw.dens0(30,-2)
-    # N^2 max
-    N_sq = -9.81*gaussian_filter(np.gradient(rho, np.linspace(0, H, Nz), axis=1)/sw.dens0(28,-2), 4) 
-    max_ind = np.argmax(N_sq, axis=1)
-    z_Nvalues = []
-    for j in range(len(N_sq)):
-        z_Nvalues.append(-np.linspace(0, H, Nz)[(Nz-1)-max_ind[j]])
     z_rhovalues = []
     #rho_i = [rho1+0.005, rho2-0.005]
     for i in range(9):
@@ -91,8 +85,11 @@ def plot_density_contours_vorticity(rho, q, a, c, T, N, folder):
         min_ind = np.argmin(abs(rho-rho_i), axis=1)
         for k in range(Nx):
             z_rhovalues[i].append(-np.linspace(0, H, Nz)[(Nz-1)-min_ind[k]])
-        plt.plot(np.linspace(0, L, Nx)/(H-z0), gaussian_filter(np.array(z_rhovalues[i])/(H-z0), 5), color='black', linewidth=0.6)
-    plt.plot(np.linspace(0, L, Nx)/(H-z0), gaussian_filter(np.array(z_Nvalues)/(H-z0), 5), linewidth=1.5, color='black')
+        if i == 4:
+            lw = 1.5
+        else:
+            lw = 0.6
+        plt.plot(np.linspace(0, L, Nx)/(H-z0), gaussian_filter(np.array(z_rhovalues[i])/(H-z0), 5), color='black', linewidth=lw)
     pcm = ax.imshow(gaussian_filter(np.transpose(q), 4), vmin=-0.2, vmax=0.2, cmap='bwr', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
     plt.fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(num_conv[a])/(H-z0), facecolor="white", zorder=10)
     plt.plot(np.linspace(0, L, Nx)/(H-z0), keel(num_conv[a])/(H-z0), linewidth=0.5, color='black')
@@ -153,12 +150,6 @@ def plot_density_contours_velocity(rho, u, a, c, T, N, folder):
     rho1 = sw.dens0(28,-2)
     rho2 = sw.dens0(30,-2)
     U = num_conv[c]*np.sqrt((H-z0)*DB)
-    # N^2 max
-    N_sq = -9.81*gaussian_filter(np.gradient(rho, np.linspace(0, H, Nz), axis=1)/sw.dens0(28,-2), 4) 
-    max_ind = np.argmax(N_sq, axis=1)
-    z_Nvalues = []
-    for j in range(len(N_sq)):
-        z_Nvalues.append(-np.linspace(0, H, Nz)[(Nz-1)-max_ind[j]])
     z_rhovalues = []
     #rho_i = [rho1+0.005, rho2-0.005]
     for i in range(9):
@@ -167,8 +158,11 @@ def plot_density_contours_velocity(rho, u, a, c, T, N, folder):
         min_ind = np.argmin(abs(rho-rho_i), axis=1)
         for k in range(Nx):
             z_rhovalues[i].append(-np.linspace(0, H, Nz)[(Nz-1)-min_ind[k]])
-        plt.plot(np.linspace(0, L, Nx)/(H-z0), gaussian_filter(np.array(z_rhovalues[i])/(H-z0), 5), color='black', linewidth=0.6)
-    plt.plot(np.linspace(0, L, Nx)/(H-z0), gaussian_filter(np.array(z_Nvalues)/(H-z0), 5), linewidth=1.5, color='black')
+        if i == 4:
+            lw = 1.5
+        else:
+            lw = 0.6
+        plt.plot(np.linspace(0, L, Nx)/(H-z0), gaussian_filter(np.array(z_rhovalues[i])/(H-z0), 5), color='black', linewidth=lw)
     pcm = ax.imshow(np.transpose(u)/U, vmin=-1, vmax=1, cmap='bwr', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
     plt.fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(num_conv[a])/(H-z0), facecolor="white", zorder=10)
     plt.plot(np.linspace(0, L, Nx)/(H-z0), keel(num_conv[a])/(H-z0), linewidth=0.5, color='black')
@@ -198,7 +192,7 @@ def plot_density_contours_velocity(rho, u, a, c, T, N, folder):
 
 def create_pngs():
     for dir_a in ['200']:
-        for dir_c in ['200']:
+        for dir_c in ['005', '100', '105', '200']:
             print(dir_a, dir_c)
             direct = '/gpfs/fs0/scratch/n/ngrisoua/samdeab/mixing/new/data-mixingsim-a{0}c{1}-00/'.format(dir_a, dir_c)
             for i in range(70, sim_length['a'+dir_a+'c'+dir_c], 1):
@@ -212,10 +206,10 @@ def create_pngs():
 def create_movies():
     for dir_a in ['005', '095', '102', '200']:
         for dir_c in ['005', '100', '105', '200']:
-            arg = 'cd /gpfs/fs0/scratch/n/ngrisoua/samdeab/mixing/fig_pngs/a{0}c{1}/density/ ; ffmpeg -y -framerate 20 -start_number 70 -i img%03d.png -c:v libx264 -r 30 -pix_fmt yuv420p F{1}H{0}_density.mp4'.format(dir_a, dir_c)
+            arg = 'cd /gpfs/fs0/scratch/n/ngrisoua/samdeab/mixing/fig_pngs/a{0}c{1}/density/ ; ffmpeg -y -framerate 20 -start_number 70 -i img%03d.png -c:v libx264 -r 30 -pix_fmt yuv420p F{1}H{0}_density_contours_velocity.mp4'.format(dir_a, dir_c)
             os.system(arg)
-            arg = 'cd /gpfs/fs0/scratch/n/ngrisoua/samdeab/mixing/fig_pngs/a{0}c{1}/uvelocity/ ; ffmpeg -y -framerate 20 -start_number 70 -i img%03d.png -c:v libx264 -r 30 -pix_fmt yuv420p F{1}H{0}_uvelocity.mp4'.format(dir_a, dir_c)
+            arg = 'cd /gpfs/fs0/scratch/n/ngrisoua/samdeab/mixing/fig_pngs/a{0}c{1}/uvelocity/ ; ffmpeg -y -framerate 20 -start_number 70 -i img%03d.png -c:v libx264 -r 30 -pix_fmt yuv420p F{1}H{0}_density_contours_vorticity.mp4'.format(dir_a, dir_c)
             os.system(arg)
 
-create_pngs()
+#create_pngs()
 create_movies()

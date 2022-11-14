@@ -23,7 +23,7 @@ args = docopt(__doc__)
 files = args['<files>'] #=h5 file location for analysis
 fileno = args['--fileno'] #Name of outputted mp4s
 splice = args['--splice'] #Specified files for analysis
-splice0 = int(splice[:splice.find('-')])
+splice0 = int(splice[:splice.find('-')]) - 70
 splice1 = int(splice[splice.find('-')+1:])
 
 def conv(a_s):
@@ -48,6 +48,7 @@ H = CON.H
 L = CON.L
 l = CON.l
 a_s = fileno[fileno.find("-a")+2:fileno.find("-a")+5]
+c_s = fileno[fileno.find("c")+1:fileno.find("c")+4]
 a = conv(a_s)
 print(a)
 z0 = CON.z0
@@ -77,10 +78,10 @@ def sort_rho_z(rho, L_1, L_2, H_1, H_2):
 	x, z = domain.grids(domain.dealias)
 	Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(L_1, L_2, H_1, H_2)
 	rho = rho[Ni_x:Nf_x, Ni_z:Nf_z]	 
-	ind = z[0][np.argsort(np.argsort(-rho, axis=None))//(Nf_x-Ni_x)]
-	z_sort_height = np.reshape(ind, (Nf_x-Ni_x, Nf_z-Ni_z))
+	#ind = z[0][np.argsort(np.argsort(-rho, axis=None))//(Nf_x-Ni_x)]
+	#z_sort_height = np.reshape(ind, (Nf_x-Ni_x, Nf_z-Ni_z))
 	rho_sort = np.reshape(-np.sort(-rho.flatten()), (Nf_x-Ni_x, Nf_z-Ni_z), order='F')
-	return rho_sort, z_sort_height
+	return rho_sort, 0
 def compute_mixedlayerdepth(h5_file, L_1, L_2, H_1, H_2):
 	domain = create_domain(L_1, L_2, H_1, H_2)
 	x, z = domain.grids(domain.dealias)
@@ -129,8 +130,6 @@ def compute_potential_energies(h5_file, L_1, L_2, H_1, H_2):
 		rho_x = np.gradient(rho, np.concatenate(x).ravel(), axis=0, edge_order=2)
 		integrand['g'] = -9.8*region*mu*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*(rho_z**2+rho_x**2)/(A*sw.dens0(28,-2))
 		phi_d = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
-		phi_i = -mu*9.8*(np.average(rho[:, -1]) - np.average(rho[:, 0]))/(H_2-H_1)
-		print('phi_d: {0} and phi_i {1} with L = {2}'.format(phi_d*sw.dens0(28,-2), phi_i, L_2-L_1))	
 		rho_avg_s = np.average(np.gradient(rho_ref, z[0], axis=1, edge_order=2), axis=0)
 		N_sq = -9.8/sw.dens0(28,-2)*np.average(rho_avg_s)
 		K = phi_d/N_sq
@@ -306,7 +305,11 @@ def create_data_file():
 			data[9].append(energies['K'])
 			data[10].append(energies['E_k'])
 			#Region 2: Downstream from keel height
-			L_1, L_2, H_1, H_2 = l, L-40, 0, 36
+			
+			L_1, L_2, H_1 = l, L-40, 0
+			Zm = json.load(open('Zm_values_{0}-{1}.txt'.format(L_1, L_2)))
+			H_2 = Zm[a_s+c_s]
+			print(a_s+c_s, H_2/(H-z0))
 			energies = compute_potential_energies(h5file, L_1, L_2, H_1, H_2)
 			data[11].append(energies['E_b'])
 			data[12].append(energies['E_a'])
@@ -316,7 +319,7 @@ def create_data_file():
 			data[16].append(energies['ked'])
 			data[17].append(energies['K'])
 			#Region 3: Upstream from keel height
-			L_1, L_2, H_1, H_2 = 160, l, 0, 36
+			L_1, L_2, H_1 = 160, l, 0
 			energies = compute_potential_energies(h5file, L_1, L_2, H_1, H_2)
 			data[18].append(energies['E_b'])
 			data[19].append(energies['E_a'])
@@ -353,9 +356,9 @@ def create_salt_file():
 	plt.clf()
 
 def mixing_depth_calculate(rho, L_1, L_2, ab):
-	K = []
-	K_avg = []
-	for z_m in np.linspace(0, H, Nz):
+	phi_d = []
+	phi_d_avg = []
+	for z_m in np.linspace(0, H, Nz)[3:-100:3]:
 		Nf_x, Ni_x, Nf_z, Ni_z = generate_modes(L_1, L_2, 0, z_m)
 		domain = create_domain(L_1, L_2, 0, z_m)
 		x, z = domain.grids(domain.dealias)
@@ -366,57 +369,64 @@ def mixing_depth_calculate(rho, L_1, L_2, ab):
 		integrand['g'] = region
 		A = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
 		rho_ref, z_ref = sort_rho_z(rho, L_1, L_2, 0, z_m)
-		rho = rho[Ni_x:Nf_x, Ni_z:Nf_z]
-		deriv = 1/np.gradient(rho_ref, z[0], axis=1, edge_order=2)
-		rho_z = np.gradient(rho, z[0], axis=1, edge_order=2)
-		rho_x = np.gradient(rho, np.concatenate(x).ravel(), axis=0, edge_order=2)
-		integrand['g'] = -9.8*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*(rho_x**2+rho_z**2)*region/(sw.dens0(28,-2))
-		phi_d = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
-		rho_avg_s = np.gradient(np.average(rho_ref, axis=0), z[0])
-		N_sq = -9.8/sw.dens0(28,-2)*np.average(rho_avg_s)
-		K.append(phi_d/N_sq)
-		K_avg.append(phi_d/(A*N_sq))
-	return (np.array(K), np.array(K_avg))
+		rho_cut = rho[Ni_x:Nf_x, Ni_z:Nf_z]
+		deriv = 1/np.gradient(rho_ref, z[0], axis=1)
+		rho_z = np.gradient(rho_cut, z[0], axis=1)
+		rho_x = np.gradient(rho_cut, np.concatenate(x).ravel(), axis=0)
+		integrand['g'] = -9.8*mu*np.nan_to_num(deriv, nan=0, posinf=0, neginf=0)*(rho_x**2+rho_z**2)*region/(sw.dens0(28,-2))
+		phi_dval = de.operators.integrate(integrand, 'x', 'z').evaluate()['g'][0][0]
+		#rho_avg_s = np.gradient(np.average(rho_ref, axis=0), z[0])
+		#N_sq = -9.8/sw.dens0(28,-2)*np.average(rho_avg_s)
+		phi_d.append(phi_dval)
+		phi_d_avg.append(phi_dval/A)
+	return (np.array(phi_d), np.array(phi_d_avg))
 
-def create_kappa_json(L_1, L_2):
+def create_phi_d_json(L_1, L_2):
 	a_s = ['005', '095', '102', '200']
 	c_s = ['005', '100', '105', '200']
 	times = [[220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450]]
-	kappa = {}
-	kappa_avg = {}
+	phi_d = {}
+	phi_d_avg = {}
 	for i in range(len(a_s)):
 		for j in range(len(c_s)):
-			for k in range(70, times[i][j], 3):
+			for k in range(70, times[i][j], 10):
 				l = 0
-				kappa_temp = 0
+				phi_d_temp = 0
+				phi_d_temp_avg = 0
 				with h5py.File('new/data-mixingsim-a{0}c{1}-00/data-mixingsim-a{0}c{1}-00_s{2}.h5'.format(a_s[i], c_s[j], k), mode='r') as f:
-					kappa_temp += mixing_depth_calculate(f['tasks']['rho'][0], L_1, L_2, a_s[i])[0]
-					kappa_temp_avg += mixing_depth_calculate(f['tasks']['rho'][0], L_1, L_2, a_s[i])[1]		
+					phi_d_temp += mixing_depth_calculate(f['tasks']['rho'][0], L_1, L_2, a_s[i])[0]
+					phi_d_temp_avg += mixing_depth_calculate(f['tasks']['rho'][0], L_1, L_2, a_s[i])[1]		
 					l += 1
-			kappa[a_s[i]+c_s[j]] = kappa_temp/l
-			kappa_avg[a_s[i]+c_s[j]] = kappa_temp_avg/l
+			phi_d[a_s[i]+c_s[j]] = phi_d_temp/l
+			phi_d_avg[a_s[i]+c_s[j]] = phi_d_temp_avg/l
 			print(i,j)
-	json.dump(kappa, open('kappa_values_{0}-{1}.txt'.format(L_1, L_2), 'w'))
-	json.dump(kappa_avg, open('kappa_avg_values_{0}-{1}.txt'.format(L_1, L_2), 'w'))
+	for key in phi_d.keys():
+            phi_d[key] = list(phi_d[key])
+            phi_d_avg[key] = list(phi_d_avg[key])
+	json.dump(phi_d, open('phi_d_values_{0}-{1}.txt'.format(L_1, L_2), 'w'))
+	json.dump(phi_d_avg, open('phi_d_avg_values_{0}-{1}.txt'.format(L_1, L_2), 'w'))
 
 def create_Zm_json(L_1, L_2):
-	kappa_avg = json.load(open('kappa_avg_values_{0}-{1}.txt'.format(L_1, L_2)))
+	phi_d_avg = json.load(open('phi_d_avg_values_{0}-{1}.txt'.format(L_1, L_2)))
 	a_s = ['005', '095', '102', '200']
 	c_s = ['005', '100', '105', '200']
 	Zm = {}
 	for ab in a_s:
 		for cb in c_s:
-			v = np.argwhere(kappa_avg[ab+cb] >= 1)
-			Zm[ab+cb] = np.min(v)
+			peaks, _ = sc.find_peaks(np.array(phi_d_avg[ab+cb]), height=np.average(phi_d_avg[ab+cb]), width=(3, 1e6))
+			Zm[ab+cb] = int(np.linspace(0, H, Nz)[3:-100:3][peaks[-1]])	
+			print(ab+cb, peaks, phi_d_avg[ab+cb][peaks[-1]], Zm[ab+cb]/(H-z0))
+			#v = np.argwhere(np.array(phi_d_avg[ab+cb]) >= 1)
+			#Zm[ab+cb] = int(np.min(v))
 	json.dump(Zm, open('Zm_values_{0}-{1}.txt'.format(L_1, L_2), 'w'))
 
 def generate_new_set():
-	print('Building upstream Kappa json')
-	create_kappa_json(160, l)
+	print('Building upstream phi_d json')
+	#create_phi_d_json(160, l)
 	print('Building upstream Zm json')
 	create_Zm_json(160, l)
-	print('Building downstream Kappa json')
-	create_kappa_json(l, L-40)
+	print('Building downstream phi_d json')
+	#create_phi_d_json(l, L-40)
 	print('Building downstream Zm json')
 	create_Zm_json(l, L-40)
 
@@ -428,12 +438,12 @@ def mixing_depth_figure(L_1, L_2, title):
 	colors = {'005': '#99c0ff', '095': '#3385ff', '102': '#0047b3', '200': '#000a1a'}
 	styles = {"200": "solid", "105": (0, (1,1)), "100": "dashed", "005": (0, (3, 1, 1, 1))}
 	z = np.linspace(0, H, Nz)
-	kappa = json.load(open('kappa_values.txt'))
-	Zm = json.load(open('Zm_values.txt'))
+	phi_d = json.load(open('phi_d_avg_values_{0}-{1}.txt'.format(L_1, L_2)))
+	Zm = json.load(open('Zm_values_{0}-{1}.txt'.format(L_1, L_2)))
 	fig, ax1 = plt.subplots()
 	for ab in a_s[::-1]:
 		for cb in c_s:
-			ax1.plot(kappa[ab+cb], (H-z)/(H-z0), color=colors[ab], linestyle=styles[cb], linewidth=2)
+			ax1.plot(np.array(phi_d[ab+cb]), (z[3:-100:3])/(H-z0), color=colors[ab], linestyle=styles[cb], linewidth=2)
 	ax1.set_xscale('log')
 	ax2 = ax1.twiny()
 	x = np.linspace(0, 120, Nx)
@@ -453,10 +463,10 @@ def mixing_depth_figure(L_1, L_2, title):
 	ax2.set_xticks([])
 	ax2.set_xlim(0, 120)
 	plt.legend(loc='lower right', fancybox=True, shadow=True, prop={'size':11})
-	ax1.set_xlim(1, 1e7)
-	ax1.set_ylim(0, 5)
+	ax1.set_xlim(1e-6, 1e-1)
+	ax1.set_ylim(0, 7)
 	ax1.set_ylim(plt.ylim()[::-1])
-	ax1.set_xlabel(title+" Diapycnal Diffusivity $K_{{\\rho,z}}^{0}/\\mu$".format(title[0]))
+	ax1.set_xlabel(title+" Average Mixing Rate $\\Phi_d$ (J s$^{{-1}}$)".format(title[0]))
 	ax1.set_title('(a)')
 	ax1.set_ylabel("Vertical Depth $z/z_0$")
 	ax1.grid(visible=True)
@@ -476,7 +486,7 @@ def mixing_depth_figure(L_1, L_2, title):
 	for ab in a_s:
 		for cb in c_s:
 			print(ab+cb, (H-Zm[ab+cb]/Nz*H)/((H-z0)*conv(ab)))
-			plt.plot(c_v[cb], (H-Zm[ab+cb]/Nz*H)/((H-z0)*conv(ab)), marker=markers[ab+cb], color=colors2[i], ms=7)
+			plt.plot(c_v[cb], Zm[ab+cb]/(H-z0), marker=markers[ab+cb], color=colors2[i], ms=7)
 		i += 1
 	for i in range(len(a_s)):
 		plt.plot([], [], marker='X', linestyle='None', color=colors2[i], label=labels[i])
@@ -488,7 +498,7 @@ def mixing_depth_figure(L_1, L_2, title):
 		for i in range(4):
 			plt.plot([], [], marker=['P', 'D', 'o', 's'][i], linestyle='None', color='black', label=['Supercritical', 'Rarefaction', 'Solitary Waves', 'Blocked'][i])
 	plt.xlabel('Froude Number $Fr$')
-	plt.ylabel('Maximum Relative Mixing Depth $z_{{max}}/h$')
+	plt.ylabel('Maximum Mixing Depth $z_{{max}}/z_0$')
 	plt.grid()
 	plt.title('(b)')
 	plt.ylim(plt.ylim()[0], 6)
@@ -509,9 +519,9 @@ def mixing_depth_figure(L_1, L_2, title):
 
 
 
-#create_data_file()
-generate_new_set()
-mixing_depth_figure(160, l, 'Upstream')
-mixing_depth_figure(l, L-40, 'Downstream')
+create_data_file()
+#generate_new_set()
+#mixing_depth_figure(160, l, 'Upstream')
+#mixing_depth_figure(l, L-40, 'Downstream')
 #create_salt_file()
 #plot_potential_energies()
