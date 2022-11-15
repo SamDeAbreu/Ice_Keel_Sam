@@ -455,11 +455,17 @@ def K_p_upstream_var4():
     #K_p upstream var4: (Fr, eta) space with height
     fig = plt.figure()
     ax = fig.gca(projection='3d')
+    ax.view_init(elev=30, azim=225)
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
-    block_width = 0.05
+    block_width = 0.3
+    block_depth = 0.2
     for i in range(len(a)):
         for j in range(len(c)):
-            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_width, np.log10(avgs[i]['K_p_U'][j]/mu), shade=True)
+            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, np.log10(avgs[i]['K_p_U'][j]/mu), color='r', shade=True)
+    ax.set_xlabel('Fr')
+    ax.set_ylabel('$\\eta$')
+    ax.set_zlabel(r'$K_{{\rho}}^U$')
+    ax.set_title('Upstream Diapycnal Diffusivity')
     fig.savefig('Kp_Upstream_figure_var4.pdf', format='pdf')
     plt.clf()
 
@@ -467,11 +473,17 @@ def K_p_downstream_var4():
     #K_p downstream var4: (Fr, eta) space with height
     fig = plt.figure()
     ax = fig.gca(projection='3d')
+    ax.view_init(elev=30, azim=225)
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
-    block_width = 0.05
+    block_width = 0.3
+    block_depth = 0.2
     for i in range(len(a)):
         for j in range(len(c)):
-            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_width, np.log10(avgs[i]['K_p_D'][j]/mu), shade=True)
+            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, np.log10(avgs[i]['K_p_D'][j]/mu), color='r', shade=True)
+    ax.set_xlabel('Fr')
+    ax.set_ylabel('$\\eta$')
+    ax.set_zlabel(r'$K_{{\rho}}^D$')
+    ax.set_title('Downstream Diapycnal Diffusivity')
     fig.savefig('Kp_Downstream_figure_var4.pdf', format='pdf')
     plt.clf()
 
@@ -1064,3 +1076,5 @@ K_p_downstream()
 #bore()
 #boundary_layer()
 #regime_graphic()
+#K_p_downstream_var4()
+#K_p_upstream_var4()
