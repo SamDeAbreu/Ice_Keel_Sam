@@ -342,7 +342,7 @@ def K_p_downstream_var1():
     plt.savefig('Kp_Downstream_figure_var1.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
-colors2 = {'D': 'darkgreen', '^': 'orange', 's': 'red', 'o': 'violet', 'P': 'gold', '*': 'gray'}
+colors2 = {'D': 'darkgreen', '^': 'peru', 's': 'red', 'o': 'violet', 'P': 'gold', '*': 'darkviolet'}
 
 def K_p_upstream_var2():
     #K_p Upstream var2: (Fr, eta) space with marker sizes
@@ -369,7 +369,6 @@ def K_p_upstream_var2():
     plt.gcf().set_size_inches(8,6, forward=True)
     plt.savefig('Kp_Upstream_figure_var2.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
-#colors2 = {'D': 'darkgreen', '^': 'orange', 's': 'red', 'o': '#c908a6', 'P': 'yellow', '*': 'lightgray', 'p': 'gray', 'd': '#800000'}
 
 def K_p_downstream_var2():
     #K_p downstream var1: (Fr, eta) space with marker sizes
@@ -397,7 +396,6 @@ def K_p_downstream_var2():
     plt.gcf().set_size_inches(8,6, forward=True)
     plt.savefig('Kp_Downstream_figure_var2.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
-#colors2 = {'D': 'darkgreen', '^': 'orange', 's': 'red', 'o': '#c908a6', 'P': 'yellow', '*': 'lightgray', 'p': 'gray', 'd': '#800000'}
 
 def K_p_upstream_var3():
     #K_p Upstream var3: Horizontal axis is eta and coloring is Fr
