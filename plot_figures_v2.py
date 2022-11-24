@@ -1,3 +1,4 @@
+import json
 import Constants as CON
 import h5py
 import numpy as np
@@ -96,6 +97,10 @@ for i in range(len(a)):
         f.close()
         data[i].append(np.loadtxt('potentialdata_{0}_{1}-{2}.txt'.format(a[i]+c[j], "70", sp[i][j]), unpack=True, skiprows=2))
         
+K_import_up = json.load(open('K_values_{0}-{1}.txt'.format(160, l)))
+K_import_down = json.load(open('K_values_{0}-{1}.txt'.format(l, 920)))
+z_mix_import_up = json.load(open('z_mix_values_{0}-{1}.txt'.format(160, l)))
+z_mix_import_down = json.load(open('z_mix_values_{0}-{1}.txt'.format(l, 920)))
 
 for i in range(len(a)):
     avgs[i]['time'] = []
@@ -110,11 +115,11 @@ for i in range(len(a)):
     avgs[i]['Phi_d_U'] = []
     avgs[i]['Phi_d_U_stdev'] = []
     avgs[i]['K_p_U'] = []
-    avgs[i]['K_p_U_stdev'] = []
     avgs[i]['K_p_D'] = []
-    avgs[i]['K_p_D_stdev'] = []
     avgs[i]['K_p_D_series'] = []
     avgs[i]['K_p_U_series'] = []
+    avgs[i]['z_mix_U'] = []
+    avgs[i]['z_mix_D'] = []
     for j in range(len(c)):
         avgs[i]['MLD'].append(average_data(data[i][j][7], c[j]))
         avgs[i]['MLD_stdev'].append(MLD_std[i][j])
@@ -126,13 +131,16 @@ for i in range(len(a)):
         avgs[i]['KED_U_stdev'].append(stdev_data(data[i][j][22], c[j]))
         avgs[i]['Phi_d_U'].append(average_data(data[i][j][20], c[j]))
         avgs[i]['Phi_d_U_stdev'].append(stdev_data(data[i][j][20], c[j]))
-        avgs[i]['K_p_U'].append(average_data(data[i][j][23], c[j]))
-        avgs[i]['K_p_U_stdev'].append(stdev_data(data[i][j][23], c[j]))
-        avgs[i]['K_p_D'].append(average_data(data[i][j][16], c[j]))
-        avgs[i]['K_p_D_stdev'].append(stdev_data(data[i][j][16], c[j]))
+        avgs[i]['time'].append(data[i][j][0])
         avgs[i]['K_p_D_series'].append(data[i][j][16])
         avgs[i]['K_p_U_series'].append(data[i][j][23])
-        avgs[i]['time'].append(data[i][j][0])
+        # Import diffusivities
+        avgs[i]['K_p_U'].append(K_import_up[a[i]+c[j]])
+        avgs[i]['K_p_D'].append(K_import_down[a[i]+c[j]])
+        avgs[i]['z_mix_U'].append(z_mix_import_up[a[i]+c[j]])
+        avgs[i]['z_mix_D'].append(z_mix_import_down[a[i]+c[j]])
+
+        
 
 
 c_axis = [0.5, 1.0, 1.5, 2]
