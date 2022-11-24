@@ -5,8 +5,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff()
-import dedalus
-import dedalus.public as de
+#import dedalus
+#import dedalus.public as de
 import scipy.signal as sc
 import seawater as sw
 from matplotlib import colors
@@ -40,9 +40,9 @@ phi_0 = sw.dens0(28,-2)*np.sqrt(DB*(H-z0)**(7))
 epsilon_0 = np.sqrt(DB**3*(H-z0))
 t_0 = np.sqrt((H-z0)/DB)
 
-xbasis = de.Chebyshev('x', 1280, interval=(0, L))
-zbasis = de.Chebyshev('z', 640, interval=(0, H))
-domain = de.Domain([xbasis, zbasis], grid_dtype=np.float64)
+#xbasis = de.Chebyshev('x', 1280, interval=(0, L))
+#zbasis = de.Chebyshev('z', 640, interval=(0, H))
+#domain = de.Domain([xbasis, zbasis], grid_dtype=np.float64)
 
 def average_data(d, c):
     return np.mean(d[:])
@@ -68,7 +68,7 @@ def sort_rho_z(h5_file, Ni_x, Nf_x, Ni_z, Nf_z):
 
 plt.rcParams.update({'font.size':12})
 
-x, z = domain.grids()
+#x, z = domain.grids()
 #a = ['a005', 'a009', 'a102', 'a200'] #heights
 #c = ['c005', 'c100', 'c105', 'c200'] #speeds
 sp = [[220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450], [220, 260, 450, 450]]
@@ -453,11 +453,11 @@ def K_p_downstream_var3():
 
 def K_p_upstream_var4():
     #K_p upstream var4: (Fr, eta) space with height
-    fig = plt.figure(figsize=(7, 7))
+    fig = plt.figure(figsize=(7, 6))
     ax = fig.gca(projection='3d')
     ax.view_init(elev=30, azim=225)
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
-    block_width = 0.2
+    block_width = 0.1
     block_depth = 0.1
     for i in range(len(a)):
         for j in range(len(c)):
@@ -473,17 +473,18 @@ def K_p_upstream_var4():
     ax.yaxis.set_rotate_label(False)
     ax.set_ylabel('$\\eta$')
     ax.zaxis.set_rotate_label(False)
-    ax.set_zlabel(r'$\log (K_{{\rho}}^U)$    ')
+    ax.set_zlabel(r'$\log (K_{{\rho}}^U / \mu)$      ')
+    ax.set_zlim(0, 4.5)
     fig.savefig('Kp_Upstream_figure_var4.pdf', format='pdf')
     plt.clf()
 
 def K_p_downstream_var4():
     #K_p downstream var4: (Fr, eta) space with height
-    fig = plt.figure(figsize=(8, 8))
+    fig = plt.figure(figsize=(7, 6))
     ax = fig.gca(projection='3d')
     ax.view_init(elev=30, azim=225)
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
-    block_width = 0.2
+    block_width = 0.1
     block_depth = 0.1
     for i in range(len(a)):
         for j in range(len(c)):
@@ -500,10 +501,69 @@ def K_p_downstream_var4():
     ax.yaxis.set_rotate_label(False)
     ax.set_ylabel('$\\eta$')
     ax.zaxis.set_rotate_label(False)
-    ax.set_zlabel(r'$\log (K_{{\rho}}^D)$     ')
+    ax.set_zlabel(r'$\log (K_{{\rho}}^D / \mu)$       ')
+    ax.set_zlim(0, 4.5)
     fig.savefig('Kp_Downstream_figure_var4.pdf', format='pdf')
     plt.clf()
 
+def K_p_upstream_var5():
+    #K_p upstream var5: (Fr, eta) space with height and marker for regime
+    fig = plt.figure(figsize=(7, 6))
+    ax = fig.gca(projection='3d')
+    ax.view_init(elev=30, azim=225)
+    a_axis = [0.5, 0.95, 1.2, 2.0] #eta
+    for i in range(len(a)):
+        for j in range(len(c)):
+            markerline, stemlines, baseline = ax.stem([c_axis[j]], [a_axis[i]], [np.log10(avgs[i]['K_p_U'][j]/mu)], linefmt=colors2[markers1[i][j]], markerfmt=markers1[i][j])
+            markerline.set_markeredgecolor(colors2[markers1[i][j]])
+            markerline.set_markerfacecolor(colors2[markers1[i][j]])
+            markerline.set_markersize(10)
+    plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocked')
+    plt.plot([], [], marker='o', linestyle='None', color=colors2['o'], label='Solitary waves')
+    plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='Rarefaction')
+    plt.plot([], [], marker='P', linestyle='None', color=colors2['P'], label='Supercritical')
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::-1], handles[::-1]))
+    plt.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 11}, fancybox=True, shadow=True)
+    ax.set_xlabel('Fr')
+    ax.yaxis.set_rotate_label(False)
+    ax.set_ylabel('$\\eta$')
+    ax.zaxis.set_rotate_label(False)
+    ax.set_zlabel(r'$\log (K_{{\rho}}^U / \mu)$       ')
+    ax.set_zlim(0, 4.5)
+    fig.savefig('Kp_Upstream_figure_var5.pdf', format='pdf')
+    plt.clf()
+
+def K_p_downstream_var5():
+    #K_p downstream var5: (Fr, eta) space with height and marker for regime
+    fig = plt.figure(figsize=(7, 6))
+    ax = fig.gca(projection='3d')
+    ax.view_init(elev=30, azim=225)
+    a_axis = [0.5, 0.95, 1.2, 2.0] #eta
+    for i in range(len(a)):
+        for j in range(len(c)):
+            markerline, stemlines, baseline = ax.stem([c_axis[j]], [a_axis[i]], [np.log10(avgs[i]['K_p_D'][j]/mu)], linefmt=colors2[markers2[i][j]], markerfmt=markers2[i][j])
+            markerline.set_markeredgecolor(colors2[markers2[i][j]])
+            markerline.set_markerfacecolor(colors2[markers2[i][j]])
+            markerline.set_markersize(10)
+    plt.plot([], [], marker='d', linestyle='None', color=colors2['d'], label='Lee waves')
+    plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocking')
+    plt.plot([], [], marker='p', linestyle='None', color=colors2['p'], label='Stirring')
+    plt.plot([], [], marker='^', linestyle='None', color=colors2['^'], label='Laminar jump')
+    plt.plot([], [], marker='*', linestyle='None', color=colors2['*'], label='Vortex shedding')
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::-1], handles[::-1]))
+    plt.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 11}, fancybox=True, shadow=True)
+    ax.set_xlabel('Fr')
+    ax.yaxis.set_rotate_label(False)
+    ax.set_ylabel('$\\eta$')
+    ax.zaxis.set_rotate_label(False)
+    ax.set_zlabel(r'$\log (K_{{\rho}}^D / \mu)$      ')
+    ax.set_zlim(0, 4.5)
+    fig.savefig('Kp_Downstream_figure_var5.pdf', format='pdf')
+    plt.clf()
+
+"""
 def regime_upstream():
     #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
     #Regime layout upstream
@@ -1077,21 +1137,23 @@ def regime_graphic():
     fig.set_dpi(d)
     plt.savefig('regime_graphic_figure_down.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf() 
-
+"""
 # RUN
-K_p_upstream()
+#K_p_upstream()
 #K_p_upstream_var1()
 #K_p_downstream_var1()
 #K_p_upstream_var2()
 #K_p_downstream_var2()
 #K_p_upstream_var3()
 #K_p_downstream_var3()
-K_p_downstream()
+#K_p_downstream()
 #test_heatmap()
-joint_regime()
-joint_regime_arctic()
+#joint_regime()
+#joint_regime_arctic()
 #bore()
 #boundary_layer()
 #regime_graphic()
 K_p_downstream_var4()
 K_p_upstream_var4()
+K_p_downstream_var5()
+K_p_upstream_var5()
