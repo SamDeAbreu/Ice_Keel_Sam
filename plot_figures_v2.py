@@ -1226,7 +1226,6 @@ def regime_graphic():
     plt.savefig('regime_graphic_figure_down.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()  
 """
-
 def zmix():
     #zmix/z0, separate plots upstream/downstream, with keel
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
