@@ -509,6 +509,10 @@ def K_p_upstream_var5():
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     for i in range(len(a)):
         for j in range(len(c)):
+            line_y = np.linspace(a_axis[i], 2.25, 50)
+            line_x = np.full(shape=line_y.shape, fill_value=c_axis[j])
+            line_z = np.full(shape=line_y.shape, fill_value=np.log10(avgs[i]['K_p_U'][j]/mu))
+            plt.plot(line_x, line_y, line_z, color='gray', ls='dotted')
             markerline, stemlines, baseline = ax.stem([c_axis[j]], [a_axis[i]], [np.log10(avgs[i]['K_p_U'][j]/mu)], linefmt=colors2[markers1[i][j]], markerfmt=markers1[i][j])
             markerline.set_markeredgecolor(colors2[markers1[i][j]])
             markerline.set_markerfacecolor(colors2[markers1[i][j]])
@@ -520,8 +524,10 @@ def K_p_upstream_var5():
     by_label = dict(zip(labels_temp[::-1], handles[::-1]))
     plt.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 11}, fancybox=True, shadow=True)
     ax.set_xlabel('Fr')
+    ax.set_xlim(0.4, 2.1)
     ax.yaxis.set_rotate_label(False)
     ax.set_ylabel('$\\eta$')
+    ax.set_ylim(0.4, 2.1)
     ax.zaxis.set_rotate_label(False)
     ax.set_zlabel(r'$\log (\overline{K}^U / \mu)$       ')
     ax.set_zlim(0, 4.5)
@@ -536,6 +542,10 @@ def K_p_downstream_var5():
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     for i in range(len(a)):
         for j in range(len(c)):
+            line_y = np.linspace(a_axis[i], 2.25, 50)
+            line_x = np.full(shape=line_y.shape, fill_value=c_axis[j])
+            line_z = np.full(shape=line_y.shape, fill_value=np.log10(avgs[i]['K_p_D'][j]/mu))
+            plt.plot(line_x, line_y, line_z, color='gray', ls='dotted')
             markerline, stemlines, baseline = ax.stem([c_axis[j]], [a_axis[i]], [np.log10(avgs[i]['K_p_D'][j]/mu)], linefmt=colors2[markers2[i][j]], markerfmt=markers2[i][j])
             markerline.set_markeredgecolor(colors2[markers2[i][j]])
             markerline.set_markerfacecolor(colors2[markers2[i][j]])
