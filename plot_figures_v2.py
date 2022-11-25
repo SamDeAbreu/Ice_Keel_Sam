@@ -1065,8 +1065,9 @@ def regime_graphic():
     plt.rcParams.update({'font.size':14})
     #Upstream
     fig, axes = plt.subplots(1,3, figsize=(13, 3))
-    paddingx = [0, 1.5, 1, 1]
+    paddingx = [-0.4, -0.1, 1, 1]
     paddingy = [-0.01, -0.01, -0.08, -0.09]
+    ms = {'P': 13, 'D': 10, 'o': 13}
     for i in range(len(axes)):
         pcm = axes[i].imshow(np.transpose(rhos1[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
         #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
@@ -1084,7 +1085,7 @@ def regime_graphic():
         axes[i].set_yticklabels(['4', '3', '2', '1', '0'])
         axes[i].set_xlim(20,75)
         axes[i].set_aspect("auto")
-        #axes[i, j].plot(48+0.8*len(titles1[k])+paddingx[k], paddingy[k]+0.4, ms=10, marker=['P', 'D', 'p', 's', 's'][k], color=colors2[['P', 'D', 'p', 's', 's'][k]], clip_on=False)
+        axes[i].plot(53+0.8*len(titles1[i])+paddingx[i], paddingy[i]+0.4, markeredgecolor='k', ms=ms[['P', 'D', 'o'][i]], marker=['P', 'D', 'o'][i], color=colors2[['P', 'D', 'o'][i]], clip_on=False)
         axes[i].set_title(titles1[i])
         axes[i].set_ylim(0,-4)
         axes[i].set_ylim(axes[i].get_ylim()[::-1])
@@ -1102,9 +1103,9 @@ def regime_graphic():
 
     #Downstream
     fig, axes = plt.subplots(1,3, figsize=(13, 3))
-    k = 0
-    paddingx = [0, 1.5, 1, 1]
+    paddingx = [0.1, 0, 0.6]
     paddingy = [-0.01, -0.01, -0.08, -0.09]
+    ms = {'*': 17.5, '^': 13, 's': 12}
     for i in range(len(axes)):
         pcm = axes[i].imshow(np.transpose(rhos2[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
         #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
@@ -1122,12 +1123,11 @@ def regime_graphic():
         axes[i].set_yticklabels(['4', '3', '2', '1', '0'])
         axes[i].set_xlim(75,115)
         axes[i].set_aspect("auto")
-        #axes[i, j].plot(48+0.8*len(titles1[k])+paddingx[k], paddingy[k]+0.4, ms=10, marker=['P', 'D', 'p', 's', 's'][k], color=colors2[['P', 'D', 'p', 's', 's'][k]], clip_on=False)
+        axes[i].plot(96+0.8*len(titles2[i])+paddingx[i], paddingy[i]+0.4, ms=ms[['*', '^', 's'][i]], markeredgecolor='k', marker=['*', '^', 's'][i], color=colors2[['*', '^', 's'][i]], clip_on=False)
         axes[i].set_title(titles2[i])
         axes[i].set_ylim(0,-4)
         axes[i].set_ylim(axes[i].get_ylim()[::-1])
         axes[i].set_xlabel('$x/z_0$')
-        k += 1
     axes[0].set_ylabel('$z/z_0$')
     plt.tight_layout()
     fig.subplots_adjust(right=0.8, hspace=0.6, wspace=0.3)
@@ -1191,12 +1191,12 @@ def regime_graphic():
 #K_p_downstream_var3()
 #K_p_downstream()
 #test_heatmap()
-joint_regime()
+#joint_regime()
 #joint_regime_arctic()
 #bore()
 #boundary_layer()
-#regime_graphic()
-K_p_downstream_var4()
-K_p_upstream_var4()
-K_p_downstream_var5()
-K_p_upstream_var5()
+regime_graphic()
+#K_p_downstream_var4()
+#K_p_upstream_var4()
+#K_p_downstream_var5()
+#K_p_upstream_var5()
