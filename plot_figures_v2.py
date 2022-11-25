@@ -350,7 +350,7 @@ def K_p_downstream_var1():
     plt.savefig('Kp_Downstream_figure_var1.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
-colors2 = {'D': 'darkgreen', '^': '#663300', 's': 'red', 'o': '#ff3399', 'P': '#ff751a', '*': 'darkviolet'}
+colors2 = {'D': 'darkgreen', '^': '#663300', 's': 'red', 'o': '#ff3399', 'P': '#fcb900', '*': 'darkviolet'}
 
 def K_p_upstream_var2():
     #K_p Upstream var2: (Fr, eta) space with marker sizes
@@ -663,7 +663,7 @@ def regime_downstream():
     plt.legend(by_label.values(), by_label.keys(), loc='center right', bbox_to_anchor=(0.944, 0.73), prop={'size': 11}, fancybox=True, shadow=True)
     plt.savefig('regime_figure_downstream.png', dpi=d, bbox_inches='tight')
     plt.clf()
-
+"""
 def joint_regime():
     #Joint regime layout 
     shift = 0.032
@@ -697,7 +697,7 @@ def joint_regime():
     plt.gca().set_aspect(1.3)
     plt.savefig('regime_layout.pdf', format='pdf', bbox_inches='tight')
     plt.clf()
-
+"""
 def joint_regime_ms():
     #Joint regime layout with ms
     shift = 0
@@ -1227,6 +1227,31 @@ def regime_graphic():
     plt.clf()  
 """
 
+def zmix():
+    #zmix/z0, separate plots upstream/downstream, with keel
+    a_axis = [0.5, 0.95, 1.2, 2.0] #eta
+    block_width, block_depth = 0.1, 0.1
+
+    figU = plt.figure(figsize=(7,6))
+    ax = figU.gca(projection='3d')
+    ax.view_init(elev=30, azim=225)
+    for i in range(len(a)):
+        for j in range(len(c)):
+            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, z_mix_import_up[a[i]+c[j]], color=colors2[markers1[i][j]], edgecolor='k', shade=True)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR')
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves')
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], mec='k', label='Supercritical')
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::-1], handles[::-1]))
+    ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 13}, fancybox=True, shadow=True)
+    ax.set_xlabel('Fr')
+    ax.yaxis.set_rotate_label(False)
+    ax.set_ylabel('$\\eta$')
+    ax.zaxis.set_rotate_label(False)
+    plt.tight_layout()
+    figU.savefig('zmix_Upstream_figure.pdf', format='pdf')
+    plt.clf()
+
 # RUN
 #K_p_upstream()
 #K_p_upstream_var1()
@@ -1237,13 +1262,14 @@ def regime_graphic():
 #K_p_downstream_var3()
 #K_p_downstream()
 #test_heatmap()
-#joint_regime()
+joint_regime()
 #joint_regime_arctic()
 #bore()
 #boundary_layer()
 #regime_graphic()
-K_p_downstream_var4()
-K_p_upstream_var4()
-K_p_downstream_var5()
-K_p_upstream_var5()
+#K_p_downstream_var4()
+#K_p_upstream_var4()
+#K_p_downstream_var5()
+#K_p_upstream_var5()
 K_p_subplots_4()
+zmix()
