@@ -350,7 +350,7 @@ def K_p_downstream_var1():
     plt.savefig('Kp_Downstream_figure_var1.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
-colors2 = {'D': 'darkgreen', '^': 'peru', 's': 'red', 'o': 'violet', 'P': 'gold', '*': 'darkviolet'}
+colors2 = {'D': 'darkgreen', '^': '#663300', 's': 'red', 'o': '#ff3399', 'P': '#ff751a', '*': 'darkviolet'}
 
 def K_p_upstream_var2():
     #K_p Upstream var2: (Fr, eta) space with marker sizes
@@ -619,31 +619,32 @@ def regime_downstream():
 
 def joint_regime():
     #Joint regime layout 
-    shift = 0.02
+    shift = 0.032
+    ms = {'o': 17.5, 'D': 15, 'P': 18, 's': 17, '^':18, '*':20.5}
     for i in range(len(a)):
         for j in range(len(c)):
-            plt.errorbar(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], capsize=5, linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=13)    
+            plt.plot(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=ms[markers1[i][j]], zorder=10)    
 #    line4, = plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='LBR', ms=11)
-    line3, = plt.plot([], [], marker='o', linestyle='None', color=colors2['o'], label='Solitary waves', ms=11)
-    line2, = plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='LBR', ms=11)
-    line1, = plt.plot([], [], marker='P', linestyle='None', color=colors2['P'], label='Supercritical', ms=11)
+    line3, = plt.plot([], [], marker='o', markeredgecolor='k', linestyle='None', color=colors2['o'], label='Solitary waves', ms=11)
+    line2, = plt.plot([], [], marker='D', markeredgecolor='k', linestyle='None', color=colors2['D'], label='LBR', ms=11)
+    line1, = plt.plot([], [], marker='P', markeredgecolor='k', linestyle='None', color=colors2['P'], label='Supercritical', ms=11)
     for i in range(len(a)):
         for j in range(len(c)):
-            plt.errorbar(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], capsize=5, linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=13)    
-    line9, = plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Lee Waves', ms=11)
+            plt.plot(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=ms[markers2[i][j]], zorder=10)    
+    line9, = plt.plot([], [], marker='s', markeredgecolor='k', linestyle='None', color=colors2['s'], label='Lee Waves', ms=11)
 #    line8, = plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocked', ms=11)
-    line7, = plt.plot([], [], marker='^', linestyle='None', color=colors2['^'], label='Quasi-laminar', ms=11)
+    line7, = plt.plot([], [], marker='^', markeredgecolor='k', linestyle='None', color=colors2['^'], label='Quasi-laminar', ms=11)
 #    line6, = plt.plot([], [], marker='p', linestyle='None', color=colors2['p'], label='Stirred', ms=11)
-    line5, = plt.plot([], [], marker='*', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=11)
-    first_legend = plt.legend(handles=[line1, line2, line3], loc='center right', bbox_to_anchor=(1.547, 0.73), prop={'size': 11}, fancybox=True, shadow=True)
+    line5, = plt.plot([], [], marker='*', markeredgecolor='k', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=11)
+    first_legend = plt.legend(handles=[line1, line2, line3], loc='center right', bbox_to_anchor=(1.457, 0.65), prop={'size': 11}, fancybox=True, shadow=True)
     plt.gca().add_artist(first_legend)
-    plt.legend(handles=[line5, line7, line9], loc='center right', bbox_to_anchor=(1.57, 0.25), prop={'size': 11}, fancybox=True, shadow=True)
+    plt.legend(handles=[line5, line7, line9], loc='center right', bbox_to_anchor=(1.48, 0.30), prop={'size': 11}, fancybox=True, shadow=True)
     plt.xlabel('$Fr$')
-    plt.ylabel('$\\eta$', rotation=False)
+    plt.ylabel('$\\eta$    ', rotation=False)
     plt.xticks([0.5, 1, 1.5, 2])
     plt.yticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
-    plt.text(2.60, 1.85, 'Upstream', ha='center', va='center')
-    plt.text(2.61, 1.09, 'Downstream', ha='center', va='center')
+    plt.text(2.525, 1.67, 'Upstream', ha='center', va='center')
+    plt.text(2.53, 1.08, 'Downstream', ha='center', va='center')
     plt.grid()
     plt.gcf().set_size_inches(8,6, forward=True)
     plt.gca().set_aspect(1.3)
@@ -1064,8 +1065,9 @@ def regime_graphic():
     plt.rcParams.update({'font.size':14})
     #Upstream
     fig, axes = plt.subplots(1,3, figsize=(13, 3))
-    paddingx = [0, 1.5, 1, 1]
+    paddingx = [-0.4, -0.1, 1, 1]
     paddingy = [-0.01, -0.01, -0.08, -0.09]
+    ms = {'P': 13, 'D': 10, 'o': 13}
     for i in range(len(axes)):
         pcm = axes[i].imshow(np.transpose(rhos1[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
         #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
@@ -1083,7 +1085,7 @@ def regime_graphic():
         axes[i].set_yticklabels(['4', '3', '2', '1', '0'])
         axes[i].set_xlim(20,75)
         axes[i].set_aspect("auto")
-        #axes[i, j].plot(48+0.8*len(titles1[k])+paddingx[k], paddingy[k]+0.4, ms=10, marker=['P', 'D', 'p', 's', 's'][k], color=colors2[['P', 'D', 'p', 's', 's'][k]], clip_on=False)
+        axes[i].plot(53+0.8*len(titles1[i])+paddingx[i], paddingy[i]+0.4, markeredgecolor='k', ms=ms[['P', 'D', 'o'][i]], marker=['P', 'D', 'o'][i], color=colors2[['P', 'D', 'o'][i]], clip_on=False)
         axes[i].set_title(titles1[i])
         axes[i].set_ylim(0,-4)
         axes[i].set_ylim(axes[i].get_ylim()[::-1])
@@ -1101,9 +1103,9 @@ def regime_graphic():
 
     #Downstream
     fig, axes = plt.subplots(1,3, figsize=(13, 3))
-    k = 0
-    paddingx = [0, 1.5, 1, 1]
+    paddingx = [0.1, 0, 0.6]
     paddingy = [-0.01, -0.01, -0.08, -0.09]
+    ms = {'*': 17.5, '^': 13, 's': 12}
     for i in range(len(axes)):
         pcm = axes[i].imshow(np.transpose(rhos2[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
         #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
@@ -1121,12 +1123,11 @@ def regime_graphic():
         axes[i].set_yticklabels(['4', '3', '2', '1', '0'])
         axes[i].set_xlim(75,115)
         axes[i].set_aspect("auto")
-        #axes[i, j].plot(48+0.8*len(titles1[k])+paddingx[k], paddingy[k]+0.4, ms=10, marker=['P', 'D', 'p', 's', 's'][k], color=colors2[['P', 'D', 'p', 's', 's'][k]], clip_on=False)
+        axes[i].plot(96+0.8*len(titles2[i])+paddingx[i], paddingy[i]+0.4, ms=ms[['*', '^', 's'][i]], markeredgecolor='k', marker=['*', '^', 's'][i], color=colors2[['*', '^', 's'][i]], clip_on=False)
         axes[i].set_title(titles2[i])
         axes[i].set_ylim(0,-4)
         axes[i].set_ylim(axes[i].get_ylim()[::-1])
         axes[i].set_xlabel('$x/z_0$')
-        k += 1
     axes[0].set_ylabel('$z/z_0$')
     plt.tight_layout()
     fig.subplots_adjust(right=0.8, hspace=0.6, wspace=0.3)
