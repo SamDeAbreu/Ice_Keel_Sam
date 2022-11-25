@@ -6,8 +6,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff()
-import dedalus
-import dedalus.public as de
+#import dedalus
+#import dedalus.public as de
 import scipy.signal as sc
 import seawater as sw
 from matplotlib import colors
@@ -509,8 +509,56 @@ def K_p_downstream_var4():
     fig.savefig('Kp_Downstream_figure_var4.pdf', format='pdf')
     plt.clf()
 
+def K_p_subplots_4():
+    #var4, both up and downstream
+    fig = plt.figure(figsize=(8,12))
+    a_axis = [0.5, 0.95, 1.2, 2.0] #eta
+    block_width, block_depth = 0.1, 0.1
+    
+    ax = fig.add_subplot(2, 1, 1, projection='3d')
+    ax.view_init(elev=30, azim=225)
+    for i in range(len(a)):
+        for j in range(len(c)):
+            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, np.log10(avgs[i]['K_p_U'][j]/mu), color=colors2[markers1[i][j]], edgecolor='k', shade=True)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR')
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves')
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], mec='k', label='Supercritical')
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::-1], handles[::-1]))
+    ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 13}, fancybox=True, shadow=True)
+    ax.set_xlabel('Fr')
+    ax.yaxis.set_rotate_label(False)
+    ax.set_ylabel('$\\eta$')
+    ax.zaxis.set_rotate_label(False)
+    ax.set_zlabel(r'$\log (\overline{K}^U / \mu)$        ')
+    ax.set_zlim(0, 4.5)
+    ax.set_title('(a)', loc='left')
+
+    ax = fig.add_subplot(2, 1, 2, projection='3d')
+    ax.view_init(elev=30, azim=225)
+    for i in range(len(a)):
+        for j in range(len(c)):
+            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, np.log10(avgs[i]['K_p_D'][j]/mu), color=colors2[markers2[i][j]], edgecolor='k', shade=True)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['s'], mec='k', label='Lee Waves')
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['^'], mec='k', label='Quasi-laminar')
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['*'], mec='k', label='Vortex Shedding')
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::-1], handles[::-1]))
+    ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 13}, fancybox=True, shadow=True)
+    ax.set_xlabel('Fr')
+    ax.yaxis.set_rotate_label(False)
+    ax.set_ylabel('$\\eta$')
+    ax.zaxis.set_rotate_label(False)
+    ax.set_zlabel(r'$\log (\overline{K}^D / \mu)$         ')
+    ax.set_zlim(0, 4.5)
+    ax.set_title('(b)', loc='left')
+
+    plt.tight_layout()
+    fig.savefig('Kp_subplots_var4.pdf', format='pdf')
+    plt.clf()
+
 def K_p_upstream_var5():
-    #K_p upstream var5: (Fr, eta) space with height and marker for regime
+    f#K_p upstream var5: (Fr, eta) space with height and marker for regime
     fig = plt.figure(figsize=(7, 6))
     ax = fig.gca(projection='3d')
     ax.view_init(elev=30, azim=225)
@@ -615,7 +663,6 @@ def regime_downstream():
     plt.legend(by_label.values(), by_label.keys(), loc='center right', bbox_to_anchor=(0.944, 0.73), prop={'size': 11}, fancybox=True, shadow=True)
     plt.savefig('regime_figure_downstream.png', dpi=d, bbox_inches='tight')
     plt.clf()
-"""
 
 def joint_regime():
     #Joint regime layout 
@@ -650,8 +697,6 @@ def joint_regime():
     plt.gca().set_aspect(1.3)
     plt.savefig('regime_layout.pdf', format='pdf', bbox_inches='tight')
     plt.clf()
-
-
 
 def joint_regime_ms():
     #Joint regime layout with ms
@@ -1138,7 +1183,7 @@ def regime_graphic():
     plt.savefig('regime_graphic_figure_down.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
-    """ fig = plt.figure(figsize=(13, 6))
+    fig = plt.figure(figsize=(13, 6))
     spec = GridSpec(ncols=6, nrows=2)
     ax1 = fig.add_subplot(spec[0, 0:2])
     ax2 = fig.add_subplot(spec[0, 2:4])
@@ -1179,7 +1224,8 @@ def regime_graphic():
     cbar.set_label("$\\rho-\\rho_1$ (kg/m$^3$)")
     fig.set_dpi(d)
     plt.savefig('regime_graphic_figure_down.pdf', format='pdf', dpi=d, bbox_inches='tight')
-    plt.clf()  """
+    plt.clf()  
+"""
 
 # RUN
 #K_p_upstream()
@@ -1195,8 +1241,9 @@ def regime_graphic():
 #joint_regime_arctic()
 #bore()
 #boundary_layer()
-regime_graphic()
-#K_p_downstream_var4()
-#K_p_upstream_var4()
-#K_p_downstream_var5()
-#K_p_upstream_var5()
+#regime_graphic()
+K_p_downstream_var4()
+K_p_upstream_var4()
+K_p_downstream_var5()
+K_p_upstream_var5()
+K_p_subplots_4()
