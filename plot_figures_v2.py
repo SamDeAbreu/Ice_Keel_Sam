@@ -6,8 +6,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff()
-#import dedalus
-#import dedalus.public as de
+import dedalus
+import dedalus.public as de
 import scipy.signal as sc
 import seawater as sw
 from matplotlib import colors
@@ -651,7 +651,7 @@ def joint_regime():
     plt.clf()
 
 
-"""
+
 def joint_regime_ms():
     #Joint regime layout with ms
     shift = 0
@@ -1028,20 +1028,17 @@ def bore():
 
 def regime_graphic():
     #density regimes
-    titles1 = ['(a) Supercritical', '(b) Rarefaction', '(c) Solitary Waves', '(d) Blocking']
-    titles2 = ['(a) Vortex Shedding', '(b) Stirred', '(c) Laminar Jump', '(d) Blocked', '(e) Lee Waves']
-    a_s = [2, 1.2, 1.2, 2]
-    c_s = [2, 0.5, 1, 0.5]
-    a_s2 = [2, 0.95, 0.5, 2, 0.5]
-    c_s2 = [2, 1.5, 1, 0.5, 0.5]
-    fs1 = ['regime_files/data-mixingsim-a200c200-00_s160.h5', #
+    titles1 = ['(a) Supercritical', '(b) LBR', '(c) Solitary Waves']
+    titles2 = ['(a) Vortex Shedding', '(b) Quasi-laminar', '(c) Lee Waves']
+    a_s = [2, 1.2, 1.2]
+    c_s = [2, 0.5, 1.0]
+    a_s2 = [2, 0.5, 0.5]
+    c_s2 = [2, 1.0, 0.5]
+    fs1 = ['regime_files/data-mixingsim-a200c200-00_s160.h5', 
         'regime_files/data-mixingsim-a102c005-00_s70.h5',
-        'regime_files/data-mixingsim-a102c100-00_s180.h5',
-        'regime_files/data-mixingsim-a200c005-00_s220.h5',] #
+        'regime_files/data-mixingsim-a102c100-00_s180.h5'] 
     fs2 = ['regime_files/data-mixingsim-a200c200-00_s320.h5',
-        'regime_files/data-mixingsim-a095c105-00_s320.h5',
-        'regime_files/data-mixingsim-a005c100-00_s240.h5',
-        'regime_files/data-mixingsim-a200c005-00_s220.h5', #
+        'regime_files/data-mixingsim-a005c100-00_s240.h5', 
         'regime_files/data-mixingsim-a005c005-00_s180.h5']
     rhos1 = []
     us1 = []
@@ -1066,49 +1063,81 @@ def regime_graphic():
             ws2.append(f['tasks']['w'][0])
     plt.rcParams.update({'font.size':14})
     #Upstream
-    fig, axes = plt.subplots(2,2, figsize=(13, 6))
-    k = 0
+    fig, axes = plt.subplots(1,3, figsize=(13, 3))
     paddingx = [0, 1.5, 1, 1]
     paddingy = [-0.01, -0.01, -0.08, -0.09]
     for i in range(len(axes)):
-        for j in range(len(axes[0])):
-            pcm = axes[i, j].imshow(np.transpose(rhos1[k])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
-            #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
-            axes[i, j].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(a_s[k])/(H-z0), facecolor="white", zorder=10)
-            speed = np.sqrt(np.transpose(us1[k])**2+np.transpose(ws1[k])**2)
-            U = c_s[k]*np.sqrt((H-z0)*DB)
-            lw = 2.2*speed/U
-            axes[i, j].plot(np.linspace(0, L, Nx)/(H-z0), keel(a_s[k])/(H-z0), linewidth=0.5, color='black')
-            c = axes[i, j].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us1[k]), np.transpose(ws1[k]), color='red', density=1.3, linewidth=lw, arrowsize=0.8, arrowstyle='->')
-            c.lines.set_alpha(0.15)
-            for x in axes[i, j].get_children():
-                if type(x) == matplotlib.patches.FancyArrowPatch:
-                    x.set_alpha(0.15)
-            axes[i, j].set_xticks([25, 35, 45, 55, 65, 75])
-            axes[i, j].set_yticklabels(['4', '3', '2', '1', '0'])
-            axes[i, j].set_xlim(20,75)
-            axes[i, j].set_aspect("auto")
-            axes[i, j].plot(48+0.8*len(titles1[k])+paddingx[k], paddingy[k]+0.4, ms=10, marker=['P', 'D', 'p', 's', 's'][k], color=colors2[['P', 'D', 'p', 's', 's'][k]], clip_on=False)
-            axes[i, j].set_title(titles1[k])
-            axes[i, j].set_ylim(0,-4)
-            axes[i, j].set_ylim(axes[i, j].get_ylim()[::-1])
-            if k == 2 or k == 3:
-                axes[i, j].set_xlabel('$x/z_0$')
-            if k == 0 or k == 2:
-                axes[i, j].set_ylabel('$z/z_0$')
-            k += 1
+        pcm = axes[i].imshow(np.transpose(rhos1[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
+        #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
+        axes[i].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(a_s[i])/(H-z0), facecolor="white", zorder=10)
+        speed = np.sqrt(np.transpose(us1[i])**2+np.transpose(ws1[i])**2)
+        U = c_s[i]*np.sqrt((H-z0)*DB)
+        lw = 2.2*speed/U
+        axes[i].plot(np.linspace(0, L, Nx)/(H-z0), keel(a_s[i])/(H-z0), linewidth=0.5, color='black')
+        c = axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us1[i]), np.transpose(ws1[i]), color='red', density=1.3, linewidth=lw, arrowsize=0.8, arrowstyle='->')
+        c.lines.set_alpha(0.15)
+        for x in axes[i].get_children():
+            if type(x) == matplotlib.patches.FancyArrowPatch:
+                x.set_alpha(0.15)
+        axes[i].set_xticks([25, 35, 45, 55, 65, 75])
+        axes[i].set_yticklabels(['4', '3', '2', '1', '0'])
+        axes[i].set_xlim(20,75)
+        axes[i].set_aspect("auto")
+        #axes[i, j].plot(48+0.8*len(titles1[k])+paddingx[k], paddingy[k]+0.4, ms=10, marker=['P', 'D', 'p', 's', 's'][k], color=colors2[['P', 'D', 'p', 's', 's'][k]], clip_on=False)
+        axes[i].set_title(titles1[i])
+        axes[i].set_ylim(0,-4)
+        axes[i].set_ylim(axes[i].get_ylim()[::-1])
+        axes[i].set_xlabel('$x/z_0$')
+    axes[0].set_ylabel('$z/z_0$')
     plt.tight_layout()
     fig.subplots_adjust(right=0.8, hspace=0.6, wspace=0.3)
     cbar_ax = fig.add_axes([0.835, 0.18, 0.02, 0.7])
     cbar = fig.colorbar(pcm, cax=cbar_ax)
-    cbar.set_label("$\\rho-\\rho_1$ (kg/m$^3$)")
+    cbar.set_label("$\\rho-\\rho_1$ (kg m$^{{-3}}$)")
     fig.set_dpi(d)
     plt.savefig('regime_graphic_figure_up.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
 
     #Downstream
-    fig = plt.figure(figsize=(13, 6))
+    fig, axes = plt.subplots(1,3, figsize=(13, 3))
+    k = 0
+    paddingx = [0, 1.5, 1, 1]
+    paddingy = [-0.01, -0.01, -0.08, -0.09]
+    for i in range(len(axes)):
+        pcm = axes[i].imshow(np.transpose(rhos2[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
+        #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
+        axes[i].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(a_s2[i])/(H-z0), facecolor="white", zorder=10)
+        speed = np.sqrt(np.transpose(us2[i])**2+np.transpose(ws2[i])**2)
+        U = c_s2[i]*np.sqrt((H-z0)*DB)
+        lw = 2*speed/U
+        axes[i].plot(np.linspace(0, L, Nx)/(H-z0), keel(a_s2[i])/(H-z0), linewidth=0.5, color='black')
+        c = axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us2[i]), np.transpose(ws2[i]), color='red', density=1.23, linewidth=lw, arrowsize=0.8, arrowstyle='->')
+        c.lines.set_alpha(0.15)
+        for x in axes[i].get_children():
+            if type(x) == matplotlib.patches.FancyArrowPatch:
+                x.set_alpha(0.15)
+        axes[i].set_xticks([75, 85, 95, 105, 115])
+        axes[i].set_yticklabels(['4', '3', '2', '1', '0'])
+        axes[i].set_xlim(75,115)
+        axes[i].set_aspect("auto")
+        #axes[i, j].plot(48+0.8*len(titles1[k])+paddingx[k], paddingy[k]+0.4, ms=10, marker=['P', 'D', 'p', 's', 's'][k], color=colors2[['P', 'D', 'p', 's', 's'][k]], clip_on=False)
+        axes[i].set_title(titles2[i])
+        axes[i].set_ylim(0,-4)
+        axes[i].set_ylim(axes[i].get_ylim()[::-1])
+        axes[i].set_xlabel('$x/z_0$')
+        k += 1
+    axes[0].set_ylabel('$z/z_0$')
+    plt.tight_layout()
+    fig.subplots_adjust(right=0.8, hspace=0.6, wspace=0.3)
+    cbar_ax = fig.add_axes([0.835, 0.18, 0.02, 0.7])
+    cbar = fig.colorbar(pcm, cax=cbar_ax)
+    cbar.set_label("$\\rho-\\rho_1$ (kg m$^{{-3}}$)")
+    fig.set_dpi(d)
+    plt.savefig('regime_graphic_figure_down.pdf', format='pdf', dpi=d, bbox_inches='tight')
+    plt.clf()
+
+    """ fig = plt.figure(figsize=(13, 6))
     spec = GridSpec(ncols=6, nrows=2)
     ax1 = fig.add_subplot(spec[0, 0:2])
     ax2 = fig.add_subplot(spec[0, 2:4])
@@ -1149,8 +1178,8 @@ def regime_graphic():
     cbar.set_label("$\\rho-\\rho_1$ (kg/m$^3$)")
     fig.set_dpi(d)
     plt.savefig('regime_graphic_figure_down.pdf', format='pdf', dpi=d, bbox_inches='tight')
-    plt.clf() 
-"""
+    plt.clf()  """
+
 # RUN
 #K_p_upstream()
 #K_p_upstream_var1()
@@ -1161,12 +1190,12 @@ def regime_graphic():
 #K_p_downstream_var3()
 #K_p_downstream()
 #test_heatmap()
-joint_regime()
+#joint_regime()
 #joint_regime_arctic()
 #bore()
 #boundary_layer()
-#regime_graphic()
-K_p_downstream_var4()
-K_p_upstream_var4()
-K_p_downstream_var5()
-K_p_upstream_var5()
+regime_graphic()
+#K_p_downstream_var4()
+#K_p_upstream_var4()
+#K_p_downstream_var5()
+#K_p_upstream_var5()
