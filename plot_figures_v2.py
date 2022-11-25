@@ -350,7 +350,7 @@ def K_p_downstream_var1():
     plt.savefig('Kp_Downstream_figure_var1.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
-colors2 = {'D': 'darkgreen', '^': 'peru', 's': 'red', 'o': 'violet', 'P': 'gold', '*': 'darkviolet'}
+colors2 = {'D': 'darkgreen', '^': '#663300', 's': 'red', 'o': '#ff3399', 'P': '#ff751a', '*': 'darkviolet'}
 
 def K_p_upstream_var2():
     #K_p Upstream var2: (Fr, eta) space with marker sizes
@@ -619,31 +619,32 @@ def regime_downstream():
 
 def joint_regime():
     #Joint regime layout 
-    shift = 0.02
+    shift = 0.032
+    ms = {'o': 17.5, 'D': 15, 'P': 18, 's': 17, '^':18, '*':20.5}
     for i in range(len(a)):
         for j in range(len(c)):
-            plt.errorbar(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], capsize=5, linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=13)    
+            plt.plot(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=ms[markers1[i][j]], zorder=10)    
 #    line4, = plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='LBR', ms=11)
-    line3, = plt.plot([], [], marker='o', linestyle='None', color=colors2['o'], label='Solitary waves', ms=11)
-    line2, = plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='LBR', ms=11)
-    line1, = plt.plot([], [], marker='P', linestyle='None', color=colors2['P'], label='Supercritical', ms=11)
+    line3, = plt.plot([], [], marker='o', markeredgecolor='k', linestyle='None', color=colors2['o'], label='Solitary waves', ms=11)
+    line2, = plt.plot([], [], marker='D', markeredgecolor='k', linestyle='None', color=colors2['D'], label='LBR', ms=11)
+    line1, = plt.plot([], [], marker='P', markeredgecolor='k', linestyle='None', color=colors2['P'], label='Supercritical', ms=11)
     for i in range(len(a)):
         for j in range(len(c)):
-            plt.errorbar(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], capsize=5, linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=13)    
-    line9, = plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Lee Waves', ms=11)
+            plt.plot(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=ms[markers2[i][j]], zorder=10)    
+    line9, = plt.plot([], [], marker='s', markeredgecolor='k', linestyle='None', color=colors2['s'], label='Lee Waves', ms=11)
 #    line8, = plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocked', ms=11)
-    line7, = plt.plot([], [], marker='^', linestyle='None', color=colors2['^'], label='Quasi-laminar', ms=11)
+    line7, = plt.plot([], [], marker='^', markeredgecolor='k', linestyle='None', color=colors2['^'], label='Quasi-laminar', ms=11)
 #    line6, = plt.plot([], [], marker='p', linestyle='None', color=colors2['p'], label='Stirred', ms=11)
-    line5, = plt.plot([], [], marker='*', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=11)
-    first_legend = plt.legend(handles=[line1, line2, line3], loc='center right', bbox_to_anchor=(1.547, 0.73), prop={'size': 11}, fancybox=True, shadow=True)
+    line5, = plt.plot([], [], marker='*', markeredgecolor='k', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=11)
+    first_legend = plt.legend(handles=[line1, line2, line3], loc='center right', bbox_to_anchor=(1.457, 0.65), prop={'size': 11}, fancybox=True, shadow=True)
     plt.gca().add_artist(first_legend)
-    plt.legend(handles=[line5, line7, line9], loc='center right', bbox_to_anchor=(1.57, 0.25), prop={'size': 11}, fancybox=True, shadow=True)
+    plt.legend(handles=[line5, line7, line9], loc='center right', bbox_to_anchor=(1.48, 0.30), prop={'size': 11}, fancybox=True, shadow=True)
     plt.xlabel('$Fr$')
-    plt.ylabel('$\\eta$', rotation=False)
+    plt.ylabel('$\\eta$    ', rotation=False)
     plt.xticks([0.5, 1, 1.5, 2])
     plt.yticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
-    plt.text(2.60, 1.85, 'Upstream', ha='center', va='center')
-    plt.text(2.61, 1.09, 'Downstream', ha='center', va='center')
+    plt.text(2.525, 1.67, 'Upstream', ha='center', va='center')
+    plt.text(2.53, 1.08, 'Downstream', ha='center', va='center')
     plt.grid()
     plt.gcf().set_size_inches(8,6, forward=True)
     plt.gca().set_aspect(1.3)
@@ -1190,12 +1191,12 @@ def regime_graphic():
 #K_p_downstream_var3()
 #K_p_downstream()
 #test_heatmap()
-#joint_regime()
+joint_regime()
 #joint_regime_arctic()
 #bore()
 #boundary_layer()
-regime_graphic()
-#K_p_downstream_var4()
-#K_p_upstream_var4()
-#K_p_downstream_var5()
-#K_p_upstream_var5()
+#regime_graphic()
+K_p_downstream_var4()
+K_p_upstream_var4()
+K_p_downstream_var5()
+K_p_upstream_var5()
