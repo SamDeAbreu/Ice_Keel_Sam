@@ -13,6 +13,7 @@ import seawater as sw
 from matplotlib import colors
 from matplotlib.gridspec import GridSpec
 import matplotlib.patches as patches
+from mpl_toolkits.mplot3d import Axes3D
 import math
 from uncertainties import ufloat
 from scipy.ndimage.filters import gaussian_filter
@@ -460,7 +461,7 @@ def K_p_downstream_var3():
 def K_p_upstream_var4():
     #K_p upstream var4: (Fr, eta) space with height
     fig = plt.figure(figsize=(7, 6))
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(1, 1, 1, projection='3d')
     ax.view_init(elev=30, azim=225)
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     block_width = 0.1
@@ -487,7 +488,7 @@ def K_p_upstream_var4():
 def K_p_downstream_var4():
     #K_p downstream var4: (Fr, eta) space with height
     fig = plt.figure(figsize=(7, 6))
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(1, 1, 1, projection='3d')
     ax.view_init(elev=30, azim=225)
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     block_width = 0.1
@@ -568,7 +569,7 @@ def K_p_subplots_4():
 def K_p_upstream_var5():
     #K_p upstream var5: (Fr, eta) space with height and marker for regime
     fig = plt.figure(figsize=(7, 6))
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(1, 1, 1, projection='3d')
     ax.view_init(elev=30, azim=225)
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     for i in range(len(a)):
@@ -601,7 +602,7 @@ def K_p_upstream_var5():
 def K_p_downstream_var5():
     #K_p downstream var5: (Fr, eta) space with height and marker for regime
     fig = plt.figure(figsize=(7, 6))
-    ax = fig.gca(projection='3d')
+    ax = fig.add_suplot(1, 1, 1, projection='3d')
     ax.view_init(elev=30, azim=225)
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     for i in range(len(a)):
@@ -1235,39 +1236,56 @@ def regime_graphic():
     plt.savefig('regime_graphic_figure_down.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()  
 """
+plt.rcParams.update({'font.size':20})
+
 def zmix():
     #zmix/z0, separate plots upstream/downstream, with keel
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     block_width, block_depth = 0.1, 0.1
+    inc_keel = True
+    vertical_inv = False
 
-    figU = plt.figure(figsize=(7.5,6))
-    ax = figU.gca(projection='3d')
-    ax.view_init(elev=30, azim=225)
+    figU = plt.figure(figsize=(10,8))
+    ax = figU.add_subplot(1, 1, 1, projection='3d')
+    if not vertical_inv:
+        roll = 0
+#    elif vertical_inv:
+#        roll = 180
+    ax.view_init(elev=30, azim=225, roll=roll)
     for i in range(len(a)):
         for j in range(len(c)):
-            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, avgs[i]['z_mix_U'][j]/z0, color=colors2[markers1[i][j]], edgecolor='k', shade=True)
+            sigma_ij = 0.75*a_axis[i]
+            y_keel = np.linspace(0.4, 2.5, 100)
+            x_keel = np.full(shape=y_keel.shape, fill_value=2.85)
+            z_keel = np.full(shape=y_keel.shape, fill_value=a_axis[i]*(sigma_ij**2)/((sigma_ij**2)+4*(y_keel-a_axis[i])**2))
+            if inc_keel:
+                plt.plot(x_keel, y_keel, z_keel)
+            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, avgs[i]['z_mix_U'][j]/8, color=colors2[markers1[i][j]], edgecolor='k', shade=True)
     ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR', ms=11)
     ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves', ms=11)
     ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], mec='k', label='Supercritical', ms=11)
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-    ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 15}, fancybox=True, shadow=True)
+    ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 18}, fancybox=True, shadow=True)
     ax.xaxis.set_rotate_label(False)
     ax.set_xlabel('\n$Fr$', linespacing=3.2)
+    ax.set_xlim(0.4, 2.85)
     ax.set_xticks([0.5, 1, 1.5, 2])
     ax.yaxis.set_rotate_label(False)
     ax.set_ylabel('\n$\\eta$', linespacing=3.2)
+    ax.set_ylim(0.4, 2.5)
     ax.set_yticks([0.5, 1, 1.5, 2])
     ax.zaxis.set_rotate_label(False)
     ax.set_zlabel('$z_{mix}/z_0$       ')
-    ax.set_zlim(0, 0.42)
-    ax.set_zticks([0, 0.1, 0.2, 0.3, 0.4])
+    ax.set_box_aspect((1.5,1,1))
+#    ax.set_zlim(0, 0.42)
+#    ax.set_zticks([0, 0.1, 0.2, 0.3, 0.4])
     plt.tight_layout()
     figU.savefig('zmix_Upstream_figure.pdf', format='pdf')
     plt.clf()
 
     figD = plt.figure(figsize=(7.5,6))
-    ax = figD.gca(projection='3d')
+    ax = Axes3D(figD)
     ax.view_init(elev=30, azim=225)
     for i in range(len(a)):
         for j in range(len(c)):
@@ -1313,3 +1331,4 @@ K_p_upstream_var4()
 #K_p_upstream_var5()
 K_p_subplots_4()
 zmix()
+phi_d_upstream()
