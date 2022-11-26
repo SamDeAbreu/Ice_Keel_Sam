@@ -1266,6 +1266,32 @@ def zmix():
     figU.savefig('zmix_Upstream_figure.pdf', format='pdf')
     plt.clf()
 
+    figD = plt.figure(figsize=(7.5,6))
+    ax = figD.gca(projection='3d')
+    ax.view_init(elev=30, azim=225)
+    for i in range(len(a)):
+        for j in range(len(c)):
+            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, avgs[i]['z_mix_D'][j]/z0, color=colors2[markers2[i][j]], edgecolor='k', shade=True)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['s'], mec='k', label='Lee Waves', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['^'], mec='k', label='Quasi-laminar', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['*'], mec='k', label='Vortex Shedding', ms=11)
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::-1], handles[::-1]))
+    ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 15}, fancybox=True, shadow=True)
+    ax.xaxis.set_rotate_label(False)
+    ax.set_xlabel('\n$Fr$', linespacing=3.2)
+    ax.set_xticks([0.5, 1, 1.5, 2])
+    ax.yaxis.set_rotate_label(False)
+    ax.set_ylabel('\n$\\eta$', linespacing=3.2)
+    ax.set_yticks([0.5, 1, 1.5, 2])
+    ax.zaxis.set_rotate_label(False)
+    ax.set_zlabel('$z_{mix}/z_0$       ')
+    ax.set_zlim(0, 0.42)
+    ax.set_zticks([0, 0.1, 0.2, 0.3, 0.4])
+    plt.tight_layout()
+    figD.savefig('zmix_Downstream_figure.pdf', format='pdf')
+    plt.clf()
+
 # RUN
 #K_p_upstream()
 #K_p_upstream_var1()
