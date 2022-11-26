@@ -513,7 +513,7 @@ def K_p_downstream_var4():
 
 def K_p_subplots_4():
     #var4, both up and downstream
-    fig = plt.figure(figsize=(8,12))
+    fig = plt.figure(figsize=(6.5,9.75))
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     block_width, block_depth = 0.1, 0.1
     
@@ -522,12 +522,12 @@ def K_p_subplots_4():
     for i in range(len(a)):
         for j in range(len(c)):
             ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, np.log10(avgs[i]['K_p_U'][j]/mu), color=colors2[markers1[i][j]], edgecolor='k', shade=True)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR')
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves')
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], mec='k', label='Supercritical')
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], mec='k', label='Supercritical', ms=11)
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-    ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 15}, fancybox=True, shadow=True)
+    ax.legend(by_label.values(), by_label.keys(), loc='upper right', bbox_to_anchor=(1.2,1), prop={'size': 15}, fancybox=True, shadow=True)
     ax.xaxis.set_rotate_label(False)
     ax.set_xlabel('\n$Fr$', linespacing=3.2)
     ax.set_xticks([0.5, 1, 1.5, 2])
@@ -544,12 +544,12 @@ def K_p_subplots_4():
     for i in range(len(a)):
         for j in range(len(c)):
             ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, np.log10(avgs[i]['K_p_D'][j]/mu), color=colors2[markers2[i][j]], edgecolor='k', shade=True)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['s'], mec='k', label='Lee Waves')
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['^'], mec='k', label='Quasi-laminar')
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['*'], mec='k', label='Vortex Shedding')
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['s'], mec='k', label='Lee Waves', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['^'], mec='k', label='Quasi-laminar', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['*'], mec='k', label='Vortex Shedding', ms=11)
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-    ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 15}, fancybox=True, shadow=True)
+    ax.legend(by_label.values(), by_label.keys(), loc='upper right', bbox_to_anchor=(1.2,1), prop={'size': 15}, fancybox=True, shadow=True)
     ax.xaxis.set_rotate_label(False)
     ax.set_xlabel('\n$Fr$', linespacing=3.2)
     ax.set_xticks([0.5, 1, 1.5, 2])
