@@ -14,6 +14,7 @@ from matplotlib import colors
 from matplotlib.gridspec import GridSpec
 import matplotlib.patches as patches
 from mpl_toolkits.mplot3d import Axes3D
+import mpl_toolkits.mplot3d.art3d as art3d
 import math
 from uncertainties import ufloat
 from scipy.ndimage.filters import gaussian_filter
@@ -1252,14 +1253,15 @@ def zmix():
 #    elif vertical_inv:
 #        roll = 180
     ax.view_init(elev=30, azim=225, roll=roll)
+    if inc_keel:
+        for i in range(len(a)):
+            x_keel = np.linspace(0.4, 2.1, 100)
+            z_keel = np.linspace(0, a_axis[i], 100)
+            X, Z = np.meshgrid(x_keel, z_keel)
+            Y = 0 * X + a_axis[i]
+            ax.plot_surface(X, Y, Z, color=colors1[i], alpha=0.8)
     for i in range(len(a)):
-        for j in range(len(c)):
-            sigma_ij = 0.75*a_axis[i]
-            y_keel = np.linspace(0.4, 2.5, 100)
-            x_keel = np.full(shape=y_keel.shape, fill_value=2.85)
-            z_keel = np.full(shape=y_keel.shape, fill_value=a_axis[i]*(sigma_ij**2)/((sigma_ij**2)+4*(y_keel-a_axis[i])**2))
-            if inc_keel:
-                plt.plot(x_keel, y_keel, z_keel)
+         for j in range(len(c)):
             ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, avgs[i]['z_mix_U'][j]/8, color=colors2[markers1[i][j]], edgecolor='k', shade=True)
     ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR', ms=11)
     ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves', ms=11)
@@ -1269,11 +1271,11 @@ def zmix():
     ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 18}, fancybox=True, shadow=True)
     ax.xaxis.set_rotate_label(False)
     ax.set_xlabel('\n$Fr$', linespacing=3.2)
-    ax.set_xlim(0.4, 2.85)
+    ax.set_xlim(0.4, 2.1)
     ax.set_xticks([0.5, 1, 1.5, 2])
     ax.yaxis.set_rotate_label(False)
     ax.set_ylabel('\n$\\eta$', linespacing=3.2)
-    ax.set_ylim(0.4, 2.5)
+    ax.set_ylim(0.4, 2.1)
     ax.set_yticks([0.5, 1, 1.5, 2])
     ax.zaxis.set_rotate_label(False)
     ax.set_zlabel('$z_{mix}/z_0$       ')
