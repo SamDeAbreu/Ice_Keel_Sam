@@ -1240,7 +1240,7 @@ def regime_graphic():
 plt.rcParams.update({'font.size':20})
 
 def zmix():
-    #zmix/z0, separate plots upstream/downstream, without keel - plain bar graphs
+    #zmix/z0, separate plots upstream/downstream
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     block_width, block_depth = 0.1, 0.1
 
@@ -1248,6 +1248,7 @@ def zmix():
     ax = figU.add_subplot(1, 1, 1, projection='3d')
     roll = 0
     ax.view_init(elev=30, azim=225, roll=roll)
+
     for i in range(len(a)):
          for j in range(len(c)):
              ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, avgs[i]['z_mix_U'][j]/8, color=colors2[markers1[i][j]], edgecolor='k', shade=True)
@@ -1267,7 +1268,6 @@ def zmix():
     ax.set_yticks([0.5, 1, 1.5, 2])
     ax.zaxis.set_rotate_label(False)
     ax.set_zlabel('$z_{mix}/z_0$       ')
-    ax.set_box_aspect((1.5,1,1))
     ax.set_zlim(0, 4.2)
     ax.set_zticks([0, 1, 2, 3, 4])
     plt.tight_layout()
@@ -1300,6 +1300,48 @@ def zmix():
     figD.savefig('zmix_Downstream_figure.pdf', format='pdf')
     plt.clf()
 
+def zmix_var2():
+    #zmix/z0, separate plots upstream/downstream, upside down
+    a_axis = [0.5, 0.95, 1.2, 2.0] #eta
+    block_width = 0.1
+
+    figU = plt.figure(figsize=(10,8))
+    ax = figU.add_subplot(1, 1, 1, projection='3d')
+    roll = 180
+    ax.view_init(elev=12, azim=187, roll=roll)
+
+    for i in range(len(a)):
+        ax.bar3d(0.4, a_axis[i] - block_width/2, 0, 1.7, block_width, a_axis[i], color='deepskyblue', alpha=0.1, shade=True, edgecolor='k')
+        for j in range(len(c)):
+            j = len(c) - 1 - j
+            markerline, stemlines, baseline = ax.stem([c_axis[j]], [a_axis[i]], [avgs[i]['z_mix_U'][j]/8], linefmt=colors2[markers1[i][j]], markerfmt=markers1[i][j])
+            markerline.set_markeredgecolor(colors2[markers1[i][j]])
+            markerline.set_markerfacecolor(colors2[markers1[i][j]])
+            markerline.set_markersize(11)
+            ax.scatter([c_axis[j]], [a_axis[i]], 0, color=colors2[markers1[i][j]])
+            ax.scatter([c_axis[j]], [a_axis[i]], [a_axis[i]], color=colors2[markers1[i][j]])
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], mec='k', label='Supercritical', ms=11)
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::-1], handles[::-1]))
+    ax.legend(by_label.values(), by_label.keys(), loc='lower left', bbox_to_anchor=(0.2, 0.2), prop={'size': 18}, fancybox=True, shadow=True)
+    ax.xaxis.set_rotate_label(False)
+    ax.set_xlabel('$Fr$', linespacing=3.2)
+    ax.set_xlim(0.4, 2.1)
+    ax.set_xticks([1, 2])
+    ax.yaxis.set_rotate_label(False)
+    ax.set_ylabel('$\\eta$', linespacing=3.2)
+    ax.set_ylim(0.4, 2.1)
+    ax.set_yticks([0.5, 1, 1.5, 2])
+    ax.zaxis.set_rotate_label(False)
+    ax.set_zlabel('       $z_{mix}/z_0$')
+    ax.set_zlim(0, 4.2)
+    ax.set_zticks([0, 1, 2, 3, 4])
+    plt.tight_layout()
+    figU.savefig('zmix_Upstream_var2.pdf', format='pdf')
+    plt.clf()
+
 # RUN
 #K_p_upstream()
 #K_p_upstream_var1()
@@ -1321,4 +1363,5 @@ K_p_upstream_var4()
 #K_p_upstream_var5()
 K_p_subplots_4()
 zmix()
+zmix_var2()
 phi_d_upstream()
