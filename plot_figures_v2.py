@@ -1240,29 +1240,17 @@ def regime_graphic():
 plt.rcParams.update({'font.size':20})
 
 def zmix():
-    #zmix/z0, separate plots upstream/downstream, with keel
+    #zmix/z0, separate plots upstream/downstream, without keel - plain bar graphs
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     block_width, block_depth = 0.1, 0.1
-    inc_keel = True
-    vertical_inv = False
 
     figU = plt.figure(figsize=(10,8))
     ax = figU.add_subplot(1, 1, 1, projection='3d')
-    if not vertical_inv:
-        roll = 0
-#    elif vertical_inv:
-#        roll = 180
+    roll = 0
     ax.view_init(elev=30, azim=225, roll=roll)
-    if inc_keel:
-        for i in range(len(a)):
-            x_keel = np.linspace(0.4, 2.1, 100)
-            z_keel = np.linspace(0, a_axis[i], 100)
-            X, Z = np.meshgrid(x_keel, z_keel)
-            Y = 0 * X + a_axis[i]
-            ax.plot_surface(X, Y, Z, color=colors1[i], alpha=0.8)
     for i in range(len(a)):
          for j in range(len(c)):
-            ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, avgs[i]['z_mix_U'][j]/8, color=colors2[markers1[i][j]], edgecolor='k', shade=True)
+             ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, avgs[i]['z_mix_U'][j]/8, color=colors2[markers1[i][j]], edgecolor='k', shade=True)
     ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR', ms=11)
     ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves', ms=11)
     ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], mec='k', label='Supercritical', ms=11)
@@ -1280,8 +1268,8 @@ def zmix():
     ax.zaxis.set_rotate_label(False)
     ax.set_zlabel('$z_{mix}/z_0$       ')
     ax.set_box_aspect((1.5,1,1))
-#    ax.set_zlim(0, 0.42)
-#    ax.set_zticks([0, 0.1, 0.2, 0.3, 0.4])
+    ax.set_zlim(0, 4.2)
+    ax.set_zticks([0, 1, 2, 3, 4])
     plt.tight_layout()
     figU.savefig('zmix_Upstream_figure.pdf', format='pdf')
     plt.clf()
@@ -1306,8 +1294,8 @@ def zmix():
     ax.set_yticks([0.5, 1, 1.5, 2])
     ax.zaxis.set_rotate_label(False)
     ax.set_zlabel('$z_{mix}/z_0$       ')
-    ax.set_zlim(0, 0.42)
-    ax.set_zticks([0, 0.1, 0.2, 0.3, 0.4])
+    ax.set_zlim(0, 4.2)
+    ax.set_zticks([0, 1, 2, 3, 4])
     plt.tight_layout()
     figD.savefig('zmix_Downstream_figure.pdf', format='pdf')
     plt.clf()
