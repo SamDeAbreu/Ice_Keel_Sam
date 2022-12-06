@@ -77,8 +77,8 @@ a = ['a005', 'a095', 'a102', 'a200']
 c = ['c005', 'c100', 'c105', 'c200']
 labels_height = ['$\\eta=0.5$', '$\\eta=0.95$', '$\\eta=1.2$', '$\\eta=2.0$']
 labels_height_Fr = ['$Fr=0.5$', '$Fr=1.0$', '$Fr=1.5$', '$Fr=2.0$']
-labels_regime_up = ['Supercritical', 'LBR', 'Solitary Waves'] #Old: ['Supercritical', 'Rarefaction',  'Solitary Waves', 'Blocking']
-labels_regime_down = ['Vortex Shedding','Quasi-laminar', 'Lee Waves'] #Old: ['Vortex Shedding', 'Stirred', 'Laminar Jump', 'Blocked', 'Lee Waves']
+labels_regime_up = ['Unstable Supercritical', 'Stable Subcritical', 'Unstable Subcritical'] #Old: ['Supercritical', 'Rarefaction',  'Solitary Waves', 'Blocking']
+labels_regime_down = ['Vortex Shedding','Fast-Laminar', 'Lee Waves'] #Old: ['Vortex Shedding', 'Stirred', 'Laminar Jump', 'Blocked', 'Lee Waves']
 markers_labels_up = ['P', 'D', 'o']
 markers_labels_down = ['*', '^', 's']
 markers1 = [['D', 'D', 'D', 'P'], ['D', 'o', 'o', 'P'], ['D', 'o', 'o', 'P'], ['D', 'o', 'o', 'P']] #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
@@ -681,15 +681,15 @@ def joint_regime():
         for j in range(len(c)):
             plt.plot(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=ms[markers1[i][j]], zorder=10)    
 #    line4, = plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='LBR', ms=11)
-    line3, = plt.plot([], [], marker='o', markeredgecolor='k', linestyle='None', color=colors2['o'], label='Solitary waves', ms=ms['o'] * 0.75)
-    line2, = plt.plot([], [], marker='D', markeredgecolor='k', linestyle='None', color=colors2['D'], label='LBR', ms=ms['D'] * 0.75)
-    line1, = plt.plot([], [], marker='P', markeredgecolor='k', linestyle='None', color=colors2['P'], label='Supercritical', ms=ms['P'] * 0.75)
+    line3, = plt.plot([], [], marker='D', markeredgecolor='k', linestyle='None', color=colors2['D'], label='Stable Subcritical', ms=ms['D'] * 0.75)
+    line2, = plt.plot([], [], marker='o', markeredgecolor='k', linestyle='None', color=colors2['o'], label='Unstable Subcritical', ms=ms['o'] * 0.75)
+    line1, = plt.plot([], [], marker='P', markeredgecolor='k', linestyle='None', color=colors2['P'], label='Unstable Supercritical', ms=ms['P'] * 0.75)
     for i in range(len(a)):
         for j in range(len(c)):
             plt.plot(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=ms[markers2[i][j]], zorder=10)    
     line9, = plt.plot([], [], marker='s', markeredgecolor='k', linestyle='None', color=colors2['s'], label='Lee Waves', ms=ms['s'] * 0.75)
 #    line8, = plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocked', ms=11)
-    line7, = plt.plot([], [], marker='^', markeredgecolor='k', linestyle='None', color=colors2['^'], label='Quasi-laminar', ms=ms['^'] * 0.75)
+    line7, = plt.plot([], [], marker='^', markeredgecolor='k', linestyle='None', color=colors2['^'], label='Fast-Laminar', ms=ms['^'] * 0.75)
 #    line6, = plt.plot([], [], marker='p', linestyle='None', color=colors2['p'], label='Stirred', ms=11)
     line5, = plt.plot([], [], marker='*', markeredgecolor='k', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=ms['*'] * 0.75)
     first_legend = plt.legend(handles=[line1, line2, line3], loc='lower center', bbox_to_anchor=(0.21, -0.5), prop={'size': 13}, fancybox=True, shadow=True)
@@ -697,53 +697,57 @@ def joint_regime():
     plt.legend(handles=[line5, line7, line9], loc='lower center', bbox_to_anchor=(0.7, -0.5), prop={'size': 13}, fancybox=True, shadow=True)
     plt.xlabel('$Fr$')
     plt.ylabel('$\\eta$    ', rotation=False)
-    plt.xticks([0.5, 1, 1.5, 2])
-    plt.yticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
-    plt.text(0.75, 0.07, 'Upstream', ha='center', va='center')
-    plt.text(1.6, 0.07, 'Downstream', ha='center', va='center')
+    plt.xlim(0.3, 2.2)
+    plt.yticks([0.5, 1.0, 1.5, 2.0])
+    plt.ylim(0.3, 2.2)
+    plt.text(0.73, -0.13, 'Upstream', ha='center', va='center')
+    plt.text(1.635, -0.13, 'Downstream', ha='center', va='center')
     plt.grid()
 #    plt.gcf().set_size_inches(10,6, forward=True)
 #    plt.gca().set_aspect(1.3)
     plt.savefig('regime_layout.pdf', format='pdf', bbox_inches='tight')
     plt.clf()
-"""
+
 def joint_regime_ms():
     #Joint regime layout with ms
-    shift = 0
+    shift = 0.032
+    ms = {'o': 17.5, 'D': 15, 'P': 18, 's': 17, '^': 18, '*': 20.5}
+    plt.figure(figsize=(6,5))
     max_up = np.log10(avgs[-1]['K_p_U'][-1]/mu)
     max_down = np.log10(avgs[-1]['K_p_D'][-1]/mu)
     for i in range(len(a)):
         for j in range(len(c)):
-            marker_size = np.exp(2.0*np.log10(avgs[i]['K_p_U'][j]/mu)/max_up) * 2.8
-            shift += marker_size/8000
-            plt.errorbar(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], capsize=5, linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=marker_size)    
-    line4, = plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocking', ms=11)
-    line3, = plt.plot([], [], marker='o', linestyle='None', color=colors2['o'], label='Solitary waves', ms=11)
-    line2, = plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='Rarefaction', ms=11)
-    line1, = plt.plot([], [], marker='P', linestyle='None', color=colors2['P'], label='Supercritical', ms=11)
+            marker_size = np.exp(2.7*np.log10(avgs[i]['K_p_U'][j]/mu)/max_up) * 1.5
+            shift = (ms[markers1[i][j]]-13+12*marker_size)/6500
+            plt.plot(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=ms[markers1[i][j]]-13+marker_size, zorder=10)    
+#    line4, = plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='LBR', ms=11)
+    line3, = plt.plot([], [], marker='D', markeredgecolor='k', linestyle='None', color=colors2['D'], label='Stable Subcritical', ms=ms['D'] * 0.75)
+    line2, = plt.plot([], [], marker='o', markeredgecolor='k', linestyle='None', color=colors2['o'], label='Unstable Subcritical', ms=ms['o'] * 0.75)
+    line1, = plt.plot([], [], marker='P', markeredgecolor='k', linestyle='None', color=colors2['P'], label='Unstable Supercritical', ms=ms['P'] * 0.75)
     for i in range(len(a)):
         for j in range(len(c)):
-            marker_size = np.exp(2.0*np.log10(avgs[i]['K_p_D'][j]/mu)/max_down) * 2.8
-            shift += marker_size/8000
-            plt.errorbar(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], capsize=5, linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=marker_size)    
-    line9, = plt.plot([], [], marker='d', linestyle='None', color=colors2['d'], label='Lee waves', ms=11)
-    line8, = plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocked', ms=11)
-    line7, = plt.plot([], [], marker='^', linestyle='None', color=colors2['^'], label='Laminar Jump', ms=11)
-    line6, = plt.plot([], [], marker='p', linestyle='None', color=colors2['p'], label='Stirred', ms=11)
-    line5, = plt.plot([], [], marker='*', linestyle='None', color=colors2['*'], label='Vortex shedding', ms=11)
-    first_legend = plt.legend(handles=[line1, line2, line3, line4], loc='center right', bbox_to_anchor=(1.385, 0.73), prop={'size': 11}, fancybox=True, shadow=True)
+            marker_size = np.exp(2.7*np.log10(avgs[i]['K_p_D'][j]/mu)/max_down) * 1.5
+            shift = (ms[markers1[i][j]]-13+12*marker_size)/6500
+            plt.plot(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=ms[markers2[i][j]]-13+marker_size, zorder=10)    
+    line9, = plt.plot([], [], marker='s', markeredgecolor='k', linestyle='None', color=colors2['s'], label='Lee Waves', ms=ms['s'] * 0.75)
+#    line8, = plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocked', ms=11)
+    line7, = plt.plot([], [], marker='^', markeredgecolor='k', linestyle='None', color=colors2['^'], label='Fast-Laminar', ms=ms['^'] * 0.75)
+#    line6, = plt.plot([], [], marker='p', linestyle='None', color=colors2['p'], label='Stirred', ms=11)
+    line5, = plt.plot([], [], marker='*', markeredgecolor='k', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=ms['*'] * 0.75)
+    first_legend = plt.legend(handles=[line1, line2, line3], loc='lower center', bbox_to_anchor=(0.21, -0.5), prop={'size': 13}, fancybox=True, shadow=True)
     plt.gca().add_artist(first_legend)
-    plt.legend(handles=[line5, line6, line7, line8, line9], loc='center right', bbox_to_anchor=(1.4, 0.25), prop={'size': 11}, fancybox=True, shadow=True)
-    plt.xlabel('Froude Number $Fr$ (Keel speed / Stratification strength)')
-    plt.ylabel('Dimensionless Keel Depth $\\eta$')
-    plt.xticks([0.5, 1, 1.5, 2])
-    plt.yticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
-    plt.text(2.29, 1.87, 'Upstream')
-    plt.text(2.25, 1.12, 'Downstream')
+    plt.legend(handles=[line5, line7, line9], loc='lower center', bbox_to_anchor=(0.7, -0.5), prop={'size': 13}, fancybox=True, shadow=True)
+    plt.xlabel('Froude Number $Fr$')
+    plt.ylabel('Dimensionless Keel Draft $\\eta$')
+    plt.yticks([0.5, 1.0, 1.5, 2.0])
+    plt.xlim(0.3,2.2)
+    plt.ylim(0.3,2.2)
+    plt.text(0.73, -0.13, 'Upstream', ha='center', va='center')
+    plt.text(1.635, -0.13, 'Downstream', ha='center', va='center')
     plt.grid()
-    plt.savefig('regime_layout_ms.png', dpi=d, bbox_inches='tight')
+    plt.savefig('regime_layout_ms.pdf', dpi=d, bbox_inches='tight')
     plt.clf()
-"""
+
 def Fr(z0, Si, Sf, U=0.2):
         dB = 9.8*(sw.dens0(Sf, -2) - sw.dens0(Si, -2))/sw.dens0(Si, -2)
         return U/np.sqrt(z0*dB)
@@ -796,7 +800,7 @@ def arctic_plot(h, color1, color2):
         value_eta = eta(z0_values[key]['z0'], h=h)
         Fr_er = sigma_Fr(z0_values[key]['z0'], S_values[key]['Si'], S_values[key]['Sf'], z0_values[key]['z0_u'], S_values[key]['Si_u'], S_values[key]['Sf_u'])
         eta_er = eta(z0_values[key]['z0'], h=h)/z0_values[key]['z0']*z0_values[key]['z0_u']
-        plt.gca().add_patch(patches.FancyBboxPatch(xy=(value_Fr-Fr_er, value_eta-eta_er), width=2*Fr_er, height=2*eta_er, linewidth=1, color=color2, fill='false', mutation_scale=0.05, alpha=0.15))
+        plt.gca().add_patch(patches.FancyBboxPatch(xy=(value_Fr-Fr_er, value_eta-eta_er), width=2*Fr_er, height=2*eta_er, linewidth=1, color=color2, fill='false', mutation_scale=0.05, alpha=0.10))
         scale = 1
         years = 5
         if key == 'Barents Sea': # Use winter salinity trend for summer salinity since summer is unavail
@@ -811,7 +815,7 @@ def arctic_plot(h, color1, color2):
             Fr_diff = Fr(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], S_values[key]['Si']+years*S_trends[key]['Si_t'], S_values[key]['Sf']+years*S_trends[key]['Sf_t'], U=0.2*(1+0.009*years))
             eta_diff = eta(z0_values[key]['z0']+years*z0_trends[key]['z0_t'], h=h)
             plt.arrow(x=value_Fr, y=value_eta, dx=Fr_diff-value_Fr, dy=eta_diff-value_eta, linewidth=2.8, length_includes_head=True, zorder=98+k, head_width=0.03)
-        plt.text(value_Fr, value_eta, labels_region[key], fontsize=15, weight='bold', ha='center', va='center', zorder=101+k)
+        plt.text(value_Fr, value_eta-0.012, labels_region[key], fontsize=15, weight='bold', ha='center', va='center', zorder=101+k)
         plt.plot(value_Fr, value_eta, marker='s', color=color1, ms=18, zorder=101+k, markeredgecolor='k')
         k += 1
     
@@ -819,39 +823,40 @@ def arctic_plot(h, color1, color2):
 def joint_regime_arctic():
     #Joint regime Arctic layout 
     shift = 0
+    fillstyle = {'o': 'full', 'D': 'none', 'P': 'right', 's': 'bottom', '^': 'top', '*': 'left'}
     max_up = np.log10(avgs[-1]['K_p_U'][-1]/mu)
     max_down = np.log10(avgs[-1]['K_p_D'][-1]/mu)
     ms = {'o': 17.5, 'D': 15, 'P': 18, 's': 17, '^': 18, '*': 20.5}
     for i in range(len(a)):
         for j in range(len(c)):
-            marker_size = np.exp(2.0*np.log10(avgs[i]['K_p_U'][j]/mu)/max_up) * 2.8
-            shift += (ms[markers1[i][j]]-13+marker_size)/8000
+            marker_size = np.exp(2.7*np.log10(avgs[i]['K_p_U'][j]/mu)/max_up) * 1.5
+            shift = (ms[markers1[i][j]]-13+12*marker_size)/6500
             plt.plot(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=ms[markers1[i][j]]-13+marker_size, zorder=10)    
 #    line4, = plt.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='LBR', ms=11)
-    line3, = plt.plot([], [], marker='o', markeredgecolor='k', linestyle='None', color=colors2['o'], label='Solitary waves', ms=ms['o'] * 0.75)
-    line2, = plt.plot([], [], marker='D', markeredgecolor='k', linestyle='None', color=colors2['D'], label='LBR', ms=ms['D'] * 0.75)
-    line1, = plt.plot([], [], marker='P', markeredgecolor='k', linestyle='None', color=colors2['P'], label='Supercritical', ms=ms['P'] * 0.75)
+    line2, = plt.plot([], [], marker='o', markeredgecolor='k', linestyle='None', color=colors2['o'], label='Unstable Subcritical', ms=ms['o'] * 0.75)
+    line3, = plt.plot([], [], marker='D', markeredgecolor='k', linestyle='None', color=colors2['D'], label='Stable Subcritical', ms=ms['D'] * 0.75)
+    line1, = plt.plot([], [], marker='P', markeredgecolor='k', linestyle='None', color=colors2['P'], label='Unstable Supercritical', ms=ms['P'] * 0.75)
     for i in range(len(a)):
         for j in range(len(c)):
-            marker_size = np.exp(2.0*np.log10(avgs[i]['K_p_D'][j]/mu)/max_down) * 2.8
-            shift += (ms[markers1[i][j]]-13+marker_size)/8000
+            marker_size = np.exp(2.7*np.log10(avgs[i]['K_p_D'][j]/mu)/max_down) * 1.5
+            shift = (ms[markers1[i][j]]-13+12*marker_size)/6500
             plt.plot(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=ms[markers2[i][j]]-13+marker_size, zorder=10)    
     line9, = plt.plot([], [], marker='s', markeredgecolor='k', linestyle='None', color=colors2['s'], label='Lee Waves', ms=ms['s'] * 0.75)
 #    line8, = plt.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Blocked', ms=11)
-    line7, = plt.plot([], [], marker='^', markeredgecolor='k', linestyle='None', color=colors2['^'], label='Quasi-laminar', ms=ms['^'] * 0.75)
+    line7, = plt.plot([], [], marker='^', markeredgecolor='k', linestyle='None', color=colors2['^'], label='Fast-Laminar', ms=ms['^'] * 0.75)
 #    line6, = plt.plot([], [], marker='p', linestyle='None', color=colors2['p'], label='Stirred', ms=11)
     line5, = plt.plot([], [], marker='*', markeredgecolor='k', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=ms['*'] * 0.75)
-    first_legend = plt.legend(handles=[line1, line2, line3], loc='lower center', bbox_to_anchor=(0.26, -0.35), prop={'size': 13}, fancybox=True, shadow=True)
+    first_legend = plt.legend(handles=[line1, line2, line3], loc='lower center', bbox_to_anchor=(0.26, -0.37), prop={'size': 13}, fancybox=True, shadow=True)
     plt.gca().add_artist(first_legend)
-    plt.legend(handles=[line5, line7, line9], loc='lower center', bbox_to_anchor=(0.75, -0.35), prop={'size': 13}, fancybox=True, shadow=True)
+    plt.legend(handles=[line5, line7, line9], loc='lower center', bbox_to_anchor=(0.75, -0.37), prop={'size': 13}, fancybox=True, shadow=True)
     plt.xlim(0,2.2)
     plt.ylim(0,2.7)
-    plt.xlabel('$Fr$')
-    plt.ylabel('$\\eta$    ', rotation=False)
+    plt.xlabel('Froude Number $Fr$')
+    plt.ylabel('Dimensionless Keel Draft $\\eta$    ')
     plt.xticks([0.5, 1, 1.5, 2])
     plt.yticks([0.5, 1, 1.5, 2, 2.5])
-    plt.text(0.58, -0.33, 'Upstream', ha='center', va='center')
-    plt.text(1.66, -0.33, 'Downstream', ha='center', va='center')
+    plt.text(0.58, -0.39, 'Upstream', ha='center', va='center')
+    plt.text(1.66, -0.39, 'Downstream', ha='center', va='center')
     plt.grid(zorder=0)
     arctic_plot(h=7.45, color1='#b30000', color2='#b30000')
     arctic_plot(h=7.45*2.5, color1='blue', color2='blue')
@@ -864,7 +869,7 @@ def joint_regime_arctic():
     #plt.text(Fr1-0.03, eta1+0.01, '*', fontsize=8, weight='bold', ha='center', va='center', zorder=10)
     #plt.imshow([[0.6,0.6], [0.7, 0.7], [0.8, 0.8]], interpolation='bicubic', vmin=0.6, vmax=0.8, extent=(0, 2.5, 0, 2.5), alpha=0.3)
     plt.gcf().set_size_inches(8,6, forward=True)
-    plt.savefig('regime_layout_regional.pdf', format='pdf', bbox_inches='tight')
+    plt.savefig('regime_layout_regional5.pdf', format='pdf', bbox_inches='tight')
     plt.clf()
 
 """
@@ -1087,8 +1092,8 @@ def bore():
 """
 def regime_graphic():
     #density regimes
-    titles1 = ['(a) Supercritical', '(b) LBR', '(c) Solitary Waves']
-    titles2 = ['(a) Vortex Shedding', '(b) Quasi-laminar', '(c) Lee Waves']
+    titles1 = ['(a) Unstable Supercritical', '(b) Stable Subcritical', '(c) Unstable Subcritical']
+    titles2 = ['(a) Vortex Shedding', '(b) Fast-laminar', '(c) Lee Waves']
     a_s = [2, 1.2, 1.2]
     c_s = [2, 0.5, 1.0]
     a_s2 = [2, 0.5, 0.5]
@@ -1102,43 +1107,50 @@ def regime_graphic():
     rhos1 = []
     us1 = []
     ws1 = []
+    qs1 = []
     rhos2 = []
     us2 = []
     ws2 = []
+    qs2 = []
     i = 0
     for fi in fs1:
         with h5py.File(fi, mode='r') as f:
             rhos1.append(f['tasks']['rho'][0])
             us1.append(f['tasks']['u'][0])
             ws1.append(f['tasks']['w'][0])
-            plt.imshow(np.transpose(us1[i]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
-            plt.savefig('test_{0}.png'.format(i))
-            plt.clf()
+            qs1.append(f['tasks']['vorticity'][0])
         i+=1
     for fi in fs2:
         with h5py.File(fi, mode='r') as f:
             rhos2.append(f['tasks']['rho'][0])
             us2.append(f['tasks']['u'][0])
             ws2.append(f['tasks']['w'][0])
+            qs2.append(f['tasks']['vorticity'][0])
     plt.rcParams.update({'font.size':14})
     #Upstream
     fig, axes = plt.subplots(1,3, figsize=(13, 3))
-    paddingx = [-0.4, -0.1, 1, 1]
-    paddingy = [-0.01, -0.01, -0.08, -0.09]
+    paddingx = [0.8, -0.1, 0.8, 1]
+    paddingy = [-0.01, -0.01, -0.04, -0.09]
     ms = {'P': 13, 'D': 10, 'o': 13}
+    rho1 = sw.dens0(28,-2)
+    rho2 = sw.dens0(30,-2)
+    z_rhovalues = rho1+(rho2-rho1)*(np.arange(4, 9, 1)+1)/10
     for i in range(len(axes)):
-        pcm = axes[i].imshow(np.transpose(rhos1[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
+        #pcm = axes[i].imshow(np.transpose(rhos1[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
+        lw = 1.3*(z_rhovalues-1022.3)/(z_rhovalues[-1]-1022.3)
+        axes[i].contour(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(rhos1[i]), z_rhovalues, linewidths=lw, colors='black')
+        pcm = axes[i].imshow(np.transpose(qs1[i]), vmin=-0.2, vmax=0.2, cmap='bwr', interpolation='bicubic', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
         #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
         axes[i].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(a_s[i])/(H-z0), facecolor="white", zorder=10)
         speed = np.sqrt(np.transpose(us1[i])**2+np.transpose(ws1[i])**2)
         U = c_s[i]*np.sqrt((H-z0)*DB)
         lw = 2.2*speed/U
         axes[i].plot(np.linspace(0, L, Nx)/(H-z0), keel(a_s[i])/(H-z0), linewidth=0.5, color='black')
-        c = axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us1[i]), np.transpose(ws1[i]), color='red', density=1.3, linewidth=lw, arrowsize=0.8, arrowstyle='->')
-        c.lines.set_alpha(0.15)
-        for x in axes[i].get_children():
-            if type(x) == matplotlib.patches.FancyArrowPatch:
-                x.set_alpha(0.15)
+        #c = axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us1[i]), np.transpose(ws1[i]), color='red', density=1.3, linewidth=lw, arrowsize=0.8, arrowstyle='->')
+        #c.lines.set_alpha(0.15)
+        #for x in axes[i].get_children():
+        #    if type(x) == matplotlib.patches.FancyArrowPatch:
+        #        x.set_alpha(0.15)
         axes[i].set_xticks([25, 35, 45, 55, 65, 75])
         axes[i].set_yticklabels(['4', '3', '2', '1', '0'])
         axes[i].set_xlim(20,75)
@@ -1153,30 +1165,32 @@ def regime_graphic():
     fig.subplots_adjust(right=0.8, hspace=0.6, wspace=0.3)
     cbar_ax = fig.add_axes([0.835, 0.18, 0.02, 0.7])
     cbar = fig.colorbar(pcm, cax=cbar_ax)
-    cbar.set_label("$\\rho-\\rho_1$ (kg m$^{{-3}}$)")
+    cbar.set_label("Vorticity $q$ (s$^{{-1}}$)")
     fig.set_dpi(d)
-    plt.savefig('regime_graphic_figure_up.pdf', format='pdf', dpi=d, bbox_inches='tight')
+    plt.savefig('regime_graphic_figure_up2.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
 
     #Downstream
     fig, axes = plt.subplots(1,3, figsize=(13, 3))
-    paddingx = [0.1, 0, 0.6]
-    paddingy = [-0.01, -0.01, -0.08, -0.09]
+    paddingx = [0.1, -0.2, 0.6]
+    paddingy = [-0.01, -0.01, -0.03, -0.09]
     ms = {'*': 17.5, '^': 13, 's': 12}
     for i in range(len(axes)):
-        pcm = axes[i].imshow(np.transpose(rhos2[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
-        #pcm = axes[i, j].imshow(np.transpose(us1[k][:, ::-1]), cmap='bwr', vmin=-0.4, vmax=0.4, extent=(0, L/(H-z0), -H/(H-z0), 0))
+        #pcm = axes[i].imshow(np.transpose(rhos2[i])-sw.dens0(28,-2), vmin=0, vmax=2, cmap='viridis', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
+        lw = 1.3*(z_rhovalues-1022.3)/(z_rhovalues[-1]-1022.3)
+        axes[i].contour(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(rhos2[i]), z_rhovalues, linewidths=lw, colors='black')
+        pcm = axes[i].imshow(np.transpose(qs2[i]), vmin=-0.2, vmax=0.2, cmap='bwr', interpolation='bicubic', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
         axes[i].fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(a_s2[i])/(H-z0), facecolor="white", zorder=10)
         speed = np.sqrt(np.transpose(us2[i])**2+np.transpose(ws2[i])**2)
         U = c_s2[i]*np.sqrt((H-z0)*DB)
         lw = 2*speed/U
         axes[i].plot(np.linspace(0, L, Nx)/(H-z0), keel(a_s2[i])/(H-z0), linewidth=0.5, color='black')
-        c = axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us2[i]), np.transpose(ws2[i]), color='red', density=1.23, linewidth=lw, arrowsize=0.8, arrowstyle='->')
-        c.lines.set_alpha(0.15)
-        for x in axes[i].get_children():
-            if type(x) == matplotlib.patches.FancyArrowPatch:
-                x.set_alpha(0.15)
+        #c = axes[i].streamplot(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(us2[i]), np.transpose(ws2[i]), color='red', density=1.23, linewidth=lw, arrowsize=0.8, arrowstyle='->')
+        #c.lines.set_alpha(0.15)
+        #for x in axes[i].get_children():
+        #    if type(x) == matplotlib.patches.FancyArrowPatch:
+        #        x.set_alpha(0.15)
         axes[i].set_xticks([75, 85, 95, 105, 115])
         axes[i].set_yticklabels(['4', '3', '2', '1', '0'])
         axes[i].set_xlim(75,115)
@@ -1191,9 +1205,9 @@ def regime_graphic():
     fig.subplots_adjust(right=0.8, hspace=0.6, wspace=0.3)
     cbar_ax = fig.add_axes([0.835, 0.18, 0.02, 0.7])
     cbar = fig.colorbar(pcm, cax=cbar_ax)
-    cbar.set_label("$\\rho-\\rho_1$ (kg m$^{{-3}}$)")
+    cbar.set_label("Vorticity $q$ (s$^{{-1}}$)")
     fig.set_dpi(d)
-    plt.savefig('regime_graphic_figure_down.pdf', format='pdf', dpi=d, bbox_inches='tight')
+    plt.savefig('regime_graphic_figure_down2.pdf', format='pdf', dpi=d, bbox_inches='tight')
     plt.clf()
 
 def zmix():
@@ -1264,12 +1278,13 @@ def zmix():
 #K_p_downstream()
 #test_heatmap()
 #joint_regime()
-joint_regime_arctic()
+#joint_regime_ms()
+#joint_regime_arctic()
 #bore()
 #boundary_layer()
-regime_graphic()
-#K_p_downstream_var4()
-#K_p_upstream_var4()
+#regime_graphic()
+K_p_downstream_var4()
+K_p_upstream_var4()
 #K_p_downstream_var5()
 #K_p_upstream_var5()
 #K_p_subplots_4()
