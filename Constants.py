@@ -1,7 +1,7 @@
 import seawater as sw
 import numpy as np
 
-T_w = 1 #C
+T_w = -2 #C
 c_p = 4.2 #J/gC
 L_T = 3.342 #J/g
 C_w = 1 #g/kg
