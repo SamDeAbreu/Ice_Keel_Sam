@@ -81,8 +81,7 @@ def plot_density_contours_vorticity(rho, q, a, c, T, N, folder):
     rho1 = sw.dens0(28,-2)
     rho2 = sw.dens0(30,-2)
     z_rhovalues = rho1+(rho2-rho1)*(np.arange(0, 9, 1)+1)/10
-    lws = 1.3*(z_rhovalues-1022.3)/(z_rhovalues[-1]-1022.3)
-    plt.contour(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(rho), z_rhovalues, linewidths=lws, colors='black')
+    plt.contour(np.linspace(0, L, Nx)/(H-z0), -np.linspace(0, H, Nz)[::-1]/(H-z0), np.transpose(rho), z_rhovalues, linewidths=0.85, colors='black')
     pcm = ax.imshow(np.transpose(q), vmin=-0.2, vmax=0.2, interpolation='bicubic', cmap='bwr', origin='lower', extent=(0, L/(H-z0), -H/(H-z0), 0))
     plt.fill_between(np.linspace(0, L, Nx)/(H-z0), 0, keel(num_conv[a])/(H-z0), facecolor="white", zorder=10)
     plt.plot(np.linspace(0, L, Nx)/(H-z0), keel(num_conv[a])/(H-z0), linewidth=0.5, color='black')
@@ -229,8 +228,8 @@ def create_movies():
             arg = 'cd /gpfs/fs0/scratch/n/ngrisoua/samdeab/mixing/fig_pngs/ ; ffmpeg -y -framerate 20 -start_number 70 -i a{2}c{3}/uvelocity/img%03d.png -c:v libx264 -r 30 -pix_fmt yuv420p F{1}H{0}_density_contours_vorticity.mp4'.format(id_conv[dir_a], id_conv[dir_c], dir_a, dir_c)
             os.system(arg)
 
-#with h5py.File('regime_files/data-mixingsim-a200c200-00_s320.h5', mode='r') as f:
-#    plot_density_velocity_streamlines(f['tasks']['rho'][0], f['tasks']['u'][0], f['tasks']['w'][0], '200', '200', 40, 40, '')
+with h5py.File('regime_files/data-mixingsim-a200c200-00_s320.h5', mode='r') as f:
+    plot_density_contours_vorticity(f['tasks']['rho'][0], f['tasks']['vorticity'][0], '200', '200', 40, 40, '')
                     
 
 create_pngs()
