@@ -1,8 +1,3 @@
-"""
-Computes the diapycnal diffusivity and zmix for all simulations and stores the data as dictionaries in json files. We use Dedalus with the fields being represented in Fourier domains for all of the integration. 
-
-Written by: Sam De Abreu August 2022
-"""
 
 #################################
 # Imports
