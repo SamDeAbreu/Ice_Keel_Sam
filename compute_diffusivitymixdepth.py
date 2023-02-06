@@ -1,7 +1,10 @@
-
+"""Computes diapycnal mixing rates, diffusivity values, and mixing depth for all 16 simulations.
+Author: Barbara Zemskova (Jan 2023)
+Edited by: Sam De Abreu (Feb 2023)
+"""
 #################################
 # Imports
-import Constants as CON
+#import Constants as CON
 import h5py
 import numpy as np
 import matplotlib
@@ -31,6 +34,29 @@ Nx_f = math.ceil(Nx/L*(L-5*z0))
 Nx_i = math.floor(Nx/L*(20*z0))
 x = np.linspace(0, L, Nx) # Horizontal grid points [m]
 z = np.linspace(0, H, Nz) # Vertical grid points (increasing downwards) [m]
+dx = L/Nx # Grid spacing in x
+dz = H/Nz # Grid spacing in z
+vol = dx*dz # "Volume" (area) of each grid cell
+
+zv, xv = np.meshgrid(z,x) # create meshgrid of (x,z) coordinates
+
+Nx_mid = int(np.where(np.abs(x-l) == np.min(np.abs(x-l)))[0])
+
+conv_id = {'a200': 'H20', 'a102': 'H12', 'a095': 'H09', 'a005': 'H05', 'c005': 'F05', 'c100': 'F10', 'c105': 'F15', 'c200': 'F20'} #Id conversions between Niagara format and paper format
+
+#################################
+# Functions
+   
+def name_to_h(name,z0):
+    if name[-2::]=='05':
+        h = 0.5*z0
+    elif name[-2::]=='09':
+        h = 0.95*z0
+    elif name[-2::]=='12':
+        h = 1.2*z0
+    else:
+        h = 2.0*z0
+    return h
 
 def keel(h, l, x):  # Eqn for keel (from SD)
     """
@@ -49,33 +75,6 @@ def find_mask(h, l, Nx, Nz, zv): # Mask out the keel based on cell height
     zv_masked = np.ma.masked_invalid(zv)
     keel_mask = np.ma.getmask(zv_masked)
     return keel_mask  # returns mask of which elements are within the keel
-
-dx = L/Nx # Grid spacing in x
-dz = H/Nz # Grid spacing in z
-vol = dx*dz # "Volume" (area) of each grid cell
-
-zv, xv = np.meshgrid(z,x) # create meshgrid of (x,z) coordinates
-
-Nx_mid = int(np.where(np.abs(x-l) == np.min(np.abs(x-l)))[0])
-
-#################################
-# Functions
-
-def conv(a_s):
-	# Converts string names to numerical values
-	if a_s == "a200":
-		return 2
-	elif a_s == "a105":
-		return 1.5
-	elif a_s == "a102":
-		return 1.2
-	elif a_s == "a100":
-		return 1.0
-	elif a_s == "a095":
-		return 0.95
-	elif a_s == "a005":
-		return 0.5
-
 
 def pad(data):
     bad_indexes = np.isnan(data)
@@ -201,7 +200,7 @@ def calc_mixing(rho,h,l,Nx,Nz,zv,Nx1,Nx2,dz,vol,upstream_flag,x,z,keel_mask):
 
     mixing = nabla_rho[Nx1:Nx2,:]*dzdb
     
-    return b, zs,  mixing
+    return b, zs,  mixing, dzdb
 
 def find_rhostar(rho, Nx1, Nx2, keel_mask):
     rho_masked = np.transpose(np.ma.array(rho, mask=keel_mask)[Nx1:Nx2])
@@ -215,26 +214,27 @@ def find_rhostar(rho, Nx1, Nx2, keel_mask):
 
 def mixing_format(rho, ab):
     rho = np.array(rho)[:, ::-1]
-    h = conv(ab)*z0
+    h = name_to_h(ab,z0) #conv(ab)*z0
     keel_mask = find_mask(h, l, Nx, Nz, zv)
     
     #Calculate upstream
-    b_up, zs_up, mixing_up = calc_mixing(rho, h, l, Nx, Nz, zv, Nx_i, Nx_mid, dz, vol, 1, x, z, keel_mask)
+    b_up, zs_up, mixing_up, dzdb_up = calc_mixing(rho, h, l, Nx, Nz, zv, Nx_i, Nx_mid, dz, vol, 1, x, z, keel_mask)
 
 	#Calculate downstream
-    b_down, zs_down, mixing_down = calc_mixing(rho,h,l,Nx,Nz,zv,Nx_mid,Nx_f,dz,vol,0,x,z, keel_mask)
+    b_down, zs_down, mixing_down, dzdb_down = calc_mixing(rho,h,l,Nx,Nz,zv,Nx_mid,Nx_f,dz,vol,0,x,z, keel_mask)
 
     mixing_up_ma = np.ma.array(mixing_up,mask=keel_mask[Nx_i:Nx_mid,:])
     mixing_dn_ma = np.ma.array(mixing_down,mask=keel_mask[Nx_mid:Nx_f,:])
-
-    tot_mix_up = np.sum(mixing_up_ma)*vol*g*mu/(rho1*mixing_up_ma.size) #tot mixing upstream
-    tot_mix_dn = np.sum(mixing_dn_ma)*vol*g*mu/(rho1*mixing_dn_ma.size) #tot mixing downstream
-
-    rho_star_up_z = np.gradient(find_rhostar(rho, Nx_i, Nx_mid, keel_mask), z)
-    rho_star_dn_z = np.gradient(find_rhostar(rho, Nx_mid, Nx_f, keel_mask), z)
     
-    N_star_sq_up = g/rho1 * np.ma.average(rho_star_up_z) 
-    N_star_sq_down = g/rho1 * np.ma.average(rho_star_dn_z) 
+    #Now area-averaged in the right units
+    tot_mix_up = np.sum(mixing_up_ma)*g*mu/(rho1*mixing_up_ma.size) #tot mixing upstream
+    tot_mix_dn = np.sum(mixing_dn_ma)*g*mu/(rho1*mixing_dn_ma.size) #tot mixing downstream
+    
+    dbdz_up = 1/dzdb_up
+    dbdz_dn = 1/dzdb_down
+    
+    N_star_sq_up = (g/rho1)*(np.nanmean(dbdz_up[dbdz_up<100])) #impose some cut-off since gradient calculations can yield singularities (division by zero)
+    N_star_sq_down = (g/rho1)*(np.nanmean(dbdz_dn[dbdz_dn<100]))
     
     tot_diff_up = tot_mix_up/(N_star_sq_up*mu)
     tot_diff_dn = tot_mix_dn/(N_star_sq_down*mu)
@@ -245,7 +245,7 @@ def mixing_format(rho, ab):
     ind_dn = np.argwhere(np.cumsum(np.sum(mixing_dn_ma, axis=0)) > 0.95*np.sum(mixing_dn_ma))[0][0]
     z_mix_dn = z[ind_dn]
    
-    return (float(tot_mix_up), float(tot_mix_dn), float(tot_diff_up), float(tot_diff_dn), float(z_mix_up), float(z_mix_dn))
+    return float(tot_mix_up), float(tot_mix_dn), float(tot_diff_up), float(tot_diff_dn), float(z_mix_up), float(z_mix_dn), float(N_star_sq_up), float(N_star_sq_down)
 
 def create_jsons():
     a_s = ['a005', 'a095', 'a102', 'a200']
@@ -257,6 +257,8 @@ def create_jsons():
     z_mix_dn = {}
     phi_d_up = {}
     phi_d_dn = {}
+    Nstar_sq_up = {}
+    Nstar_sq_dn = {}
     for i in range(len(a_s)):
         for j in range(len(c_s)):
             K_up_temp = []
@@ -265,6 +267,8 @@ def create_jsons():
             z_mix_dn_temp = []
             phi_d_up_temp = []
             phi_d_dn_temp = []
+            Nstar_sq_up_temp = []
+            Nstar_sq_dn_temp = []
             for k in range(70, times[j], 3): # Loop through all files
                 with h5py.File('new/data-mixingsim-{0}{1}-00/data-mixingsim-{0}{1}-00_s{2}.h5'.format(a_s[i], c_s[j], k), mode='r') as f:
                     temp = mixing_format(f['tasks']['rho'][0], a_s[i])
@@ -274,13 +278,16 @@ def create_jsons():
                     K_dn_temp.append(temp[3])
                     z_mix_up_temp.append(temp[4])
                     z_mix_dn_temp.append(temp[5])
+                    Nstar_sq_up_temp.append(temp[6])
+                    Nstar_sq_dn_temp.append(temp[7])
 		    # Compute average quantities
-            K_up[a_s[i]+c_s[j]] = K_up_temp
-            K_dn[a_s[i]+c_s[j]] = K_dn_temp
-            z_mix_up[a_s[i]+c_s[j]] = z_mix_up_temp
-            z_mix_dn[a_s[i]+c_s[j]] = z_mix_dn_temp
-            phi_d_up[a_s[i]+c_s[j]] = phi_d_up_temp
-            phi_d_dn[a_s[i]+c_s[j]] = phi_d_dn_temp
+            K_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = K_up_temp
+            K_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = K_dn_temp
+            z_mix_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = z_mix_up_temp
+            z_mix_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = z_mix_dn_temp
+            phi_d_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = phi_d_up_temp
+            Nstar_sq_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = Nstar_sq_up_temp
+            Nstar_sq_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = Nstar_sq_dn_temp
             print(i,j)
 	# Store data in json formatted as dictionaries 
     json.dump(K_up, open('K_values_{0}-{1}.txt'.format(160, 600), 'w'))
@@ -289,6 +296,8 @@ def create_jsons():
     json.dump(z_mix_dn, open('z_mix_values_{0}-{1}.txt'.format(600, 920), 'w'))
     json.dump(phi_d_up, open('phi_d_values_{0}-{1}.txt'.format(160, 600), 'w'))
     json.dump(phi_d_dn, open('phi_d_values_{0}-{1}.txt'.format(600, 920), 'w'))
+    json.dump(Nstar_sq_up, open('Nstar_sq_values_{0}-{1}.txt'.format(160, 600), 'w'))
+    json.dump(Nstar_sq_dn, open('Nstar_sq_values_{0}-{1}.txt'.format(600, 920), 'w'))
 
 def generate_new_set():
 	# Generates diapycnal diffusivitiy and zmix json for upstream and downstream
