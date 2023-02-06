@@ -286,6 +286,7 @@ def create_jsons():
             z_mix_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = z_mix_up_temp
             z_mix_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = z_mix_dn_temp
             phi_d_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = phi_d_up_temp
+            phi_d_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = phi_d_dn_temp
             Nstar_sq_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = Nstar_sq_up_temp
             Nstar_sq_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = Nstar_sq_dn_temp
             print(i,j)
