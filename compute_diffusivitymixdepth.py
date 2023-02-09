@@ -28,12 +28,15 @@ g = 9.8 # Acceleration due to gravity [m/s^2]
 L = 960 # Domain length [m]
 H = 80 # Domain height [m]
 l = 75*z0 # Keel center location [m]
+DB = g*(rho2-rho1)/rho1
+t0 = np.sqrt(DB/z0)
 Nx = 1280 # Number of grid points in horizontal
 Nz = 640 # Number of grid points in vertical
 Nx_f = math.ceil(Nx/L*(L-5*z0))
 Nx_i = math.floor(Nx/L*(20*z0))
 x = np.linspace(0, L, Nx) # Horizontal grid points [m]
 z = np.linspace(0, H, Nz) # Vertical grid points (increasing downwards) [m]
+
 dx = L/Nx # Grid spacing in x
 dz = H/Nz # Grid spacing in z
 vol = dx*dz # "Volume" (area) of each grid cell
@@ -42,21 +45,10 @@ zv, xv = np.meshgrid(z,x) # create meshgrid of (x,z) coordinates
 
 Nx_mid = int(np.where(np.abs(x-l) == np.min(np.abs(x-l)))[0])
 
-conv_id = {'a200': 'H20', 'a102': 'H12', 'a095': 'H09', 'a005': 'H05', 'c005': 'F05', 'c100': 'F10', 'c105': 'F15', 'c200': 'F20'} #Id conversions between Niagara format and paper format
+conv_id = {'a005': 'H05', 'a095': 'H90', 'a102': 'H12', 'a200': 'H20', 'c005': 'F05', 'c100': 'F10', 'c105': 'F15', 'c200': 'F20'}
 
 #################################
 # Functions
-   
-def name_to_h(name,z0):
-    if name[-2::]=='05':
-        h = 0.5*z0
-    elif name[-2::]=='09':
-        h = 0.95*z0
-    elif name[-2::]=='12':
-        h = 1.2*z0
-    else:
-        h = 2.0*z0
-    return h
 
 def keel(h, l, x):  # Eqn for keel (from SD)
     """
@@ -75,6 +67,17 @@ def find_mask(h, l, Nx, Nz, zv): # Mask out the keel based on cell height
     zv_masked = np.ma.masked_invalid(zv)
     keel_mask = np.ma.getmask(zv_masked)
     return keel_mask  # returns mask of which elements are within the keel
+    
+def name_to_h(name,z0):
+    if name[-2::]=='05':
+        h = 0.5*z0
+    elif name[-2::]=='09':
+        h = 0.95*z0
+    elif name[-2::]=='12':
+        h = 1.2*z0
+    else:
+        h = 2.0*z0
+    return h
 
 def pad(data):
     bad_indexes = np.isnan(data)
@@ -194,11 +197,35 @@ def rho_deriv(rho,x,z):
     nabla_rho = (rho_z)**2 + (rho_x)**2
     return nabla_rho
 
+def reject_outliers(data, m=2):
+    data = np.ma.masked_invalid(data)
+    data = np.ma.masked_where(abs(data - np.ma.mean(data)) > m * np.ma.std(data),data)
+    return data #[abs(data - np.ma.mean(data)) < m * np.ma.std(data)]
+
+def reject_outliers2(data, m=2):
+    data = np.ma.masked_invalid(data)
+    data_sort = np.ma.sort(data.reshape((data.size,))).filled(np.nan)
+    data_sort = data_sort[~np.isnan(data_sort)]
+    cutoff = data_sort[-10]
+    data = np.ma.masked_where(data>=cutoff, data)
+    #np.ma.masked_where(abs(data - np.ma.mean(data)) > m * np.ma.std(data),data)
+    return data
+    
 def calc_mixing(rho,h,l,Nx,Nz,zv,Nx1,Nx2,dz,vol,upstream_flag,x,z,keel_mask):
     b, zs, dzdb = find_zstar(rho,h,l,Nx,Nz,zv,Nx1,Nx2,dz,vol,upstream_flag,keel_mask)
     nabla_rho = rho_deriv(rho,x,z)
+    
+    #Try removing outliers one of two ways:
+    #Way 1: directly find outliers
+    #dzdb_masked = np.ma.array(dzdb,mask=keel_mask[Nx1:Nx2,:])
+    #dzdb_rem_outliers = reject_outliers(dzdb_masked)
+    
+    #Way 2: remove the largest 10 points
+    dzdb_masked = np.ma.array(dzdb,mask=keel_mask[Nx1:Nx2,:])
+    dzdb_rem_outliers = reject_outliers2(dzdb_masked)
 
-    mixing = nabla_rho[Nx1:Nx2,:]*dzdb
+    mixing = nabla_rho[Nx1:Nx2,:]*dzdb_rem_outliers
+    
     
     return b, zs,  mixing, dzdb
 
@@ -229,23 +256,37 @@ def mixing_format(rho, ab):
     #Now area-averaged in the right units
     tot_mix_up = np.sum(mixing_up_ma)*g*mu/(rho1*mixing_up_ma.size) #tot mixing upstream
     tot_mix_dn = np.sum(mixing_dn_ma)*g*mu/(rho1*mixing_dn_ma.size) #tot mixing downstream
+
     
     dbdz_up = 1/dzdb_up
     dbdz_dn = 1/dzdb_down
     
-    N_star_sq_up = (g/rho1)*(np.nanmean(dbdz_up[dbdz_up<100])) #impose some cut-off since gradient calculations can yield singularities (division by zero)
-    N_star_sq_down = (g/rho1)*(np.nanmean(dbdz_dn[dbdz_dn<100]))
+    dbdz_up = np.ma.array(dbdz_up,mask=keel_mask[Nx_i:Nx_mid,:])
+    dbdz_up = reject_outliers2(dbdz_up)
+    
+    dbdz_dn = np.ma.array(dbdz_dn,mask=keel_mask[Nx_mid:Nx_f,:])
+    dbdz_dn = reject_outliers2(dbdz_dn)
+    
+    N_star_sq_up = (g/rho1)*(np.ma.mean(dbdz_up))
+    N_star_sq_down = (g/rho1)*(np.ma.mean(dbdz_dn))
     
     tot_diff_up = tot_mix_up/(N_star_sq_up*mu)
     tot_diff_dn = tot_mix_dn/(N_star_sq_down*mu)
 
     #z_mix
-    ind_up = np.argwhere(np.cumsum(np.sum(mixing_up_ma, axis=0)) > 0.95*np.sum(mixing_up_ma))[0][0]
+    ind_up = np.argwhere(np.cumsum(np.ma.sum(mixing_up_ma, axis=0)) > 0.95*np.ma.sum(mixing_up_ma))[0][0]
     z_mix_up = z[ind_up]
     ind_dn = np.argwhere(np.cumsum(np.sum(mixing_dn_ma, axis=0)) > 0.95*np.sum(mixing_dn_ma))[0][0]
     z_mix_dn = z[ind_dn]
    
+    """ #z_mix_rel
+    inds_up = np.argwhere(mixing_up_ma > 2*(rho2-rho1)/z0).ravel()
+    z_mix_rel_up = np.max(z[inds_up[1::2]] - keel(h, l, x[inds_up[::2]]))
+    inds_max_up = np.argmax(inds_up)
+    x_mix_up = x[inds_up[2*inds_max_up]] """
+
     return float(tot_mix_up), float(tot_mix_dn), float(tot_diff_up), float(tot_diff_dn), float(z_mix_up), float(z_mix_dn), float(N_star_sq_up), float(N_star_sq_down)
+            
 
 def create_jsons():
     a_s = ['a005', 'a095', 'a102', 'a200']
@@ -269,9 +310,11 @@ def create_jsons():
             phi_d_dn_temp = []
             Nstar_sq_up_temp = []
             Nstar_sq_dn_temp = []
+            time = []
             for k in range(70, times[j], 3): # Loop through all files
                 with h5py.File('new/data-mixingsim-{0}{1}-00/data-mixingsim-{0}{1}-00_s{2}.h5'.format(a_s[i], c_s[j], k), mode='r') as f:
                     temp = mixing_format(f['tasks']['rho'][0], a_s[i])
+                    time.append(f['tasks']['rho'].dims[0]['sim_time'][0]/t0)
                     phi_d_up_temp.append(temp[0])
                     phi_d_dn_temp.append(temp[1])
                     K_up_temp.append(temp[2])
@@ -281,14 +324,14 @@ def create_jsons():
                     Nstar_sq_up_temp.append(temp[6])
                     Nstar_sq_dn_temp.append(temp[7])
 		    # Compute average quantities
-            K_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = K_up_temp
-            K_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = K_dn_temp
-            z_mix_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = z_mix_up_temp
-            z_mix_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = z_mix_dn_temp
-            phi_d_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = phi_d_up_temp
-            phi_d_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = phi_d_dn_temp
-            Nstar_sq_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = Nstar_sq_up_temp
-            Nstar_sq_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = Nstar_sq_dn_temp
+            K_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = (K_up_temp, time)
+            K_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = (K_dn_temp, time)
+            z_mix_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = (z_mix_up_temp, time)
+            z_mix_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = (z_mix_dn_temp, time)
+            phi_d_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = (phi_d_up_temp, time)
+            phi_d_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = (phi_d_dn_temp, time)
+            Nstar_sq_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = (Nstar_sq_up_temp, time)
+            Nstar_sq_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = (Nstar_sq_dn_temp, time)
             print(i,j)
 	# Store data in json formatted as dictionaries 
     json.dump(K_up, open('K_values_{0}-{1}.txt'.format(160, 600), 'w'))
