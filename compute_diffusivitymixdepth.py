@@ -29,7 +29,7 @@ L = 960 # Domain length [m]
 H = 80 # Domain height [m]
 l = 75*z0 # Keel center location [m]
 DB = g*(rho2-rho1)/rho1
-t0 = np.sqrt(DB/z0)
+t0 = np.sqrt(z0/DB)
 Nx = 1280 # Number of grid points in horizontal
 Nz = 640 # Number of grid points in vertical
 Nx_f = math.ceil(Nx/L*(L-5*z0))
@@ -45,7 +45,7 @@ zv, xv = np.meshgrid(z,x) # create meshgrid of (x,z) coordinates
 
 Nx_mid = int(np.where(np.abs(x-l) == np.min(np.abs(x-l)))[0])
 
-conv_id = {'a005': 'H05', 'a095': 'H90', 'a102': 'H12', 'a200': 'H20', 'c005': 'F05', 'c100': 'F10', 'c105': 'F15', 'c200': 'F20'}
+conv_id = {'a005': 'H05', 'a095': 'H09', 'a102': 'H12', 'a200': 'H20', 'c005': 'F05', 'c100': 'F10', 'c105': 'F15', 'c200': 'F20'}
 
 #################################
 # Functions
@@ -206,7 +206,7 @@ def reject_outliers2(data, m=2):
     data = np.ma.masked_invalid(data)
     data_sort = np.ma.sort(data.reshape((data.size,))).filled(np.nan)
     data_sort = data_sort[~np.isnan(data_sort)]
-    cutoff = data_sort[-10]
+    cutoff = data_sort[-15]
     data = np.ma.masked_where(data>=cutoff, data)
     #np.ma.masked_where(abs(data - np.ma.mean(data)) > m * np.ma.std(data),data)
     return data
@@ -285,7 +285,18 @@ def mixing_format(rho, ab):
     inds_max_up = np.argmax(inds_up)
     x_mix_up = x[inds_up[2*inds_max_up]] """
 
-    return float(tot_mix_up), float(tot_mix_dn), float(tot_diff_up), float(tot_diff_dn), float(z_mix_up), float(z_mix_dn), float(N_star_sq_up), float(N_star_sq_down)
+    #z_mix_rel N^2 version
+    N_sq = np.gradient(rho, axis=1)
+    #Upstream
+    inds_max_up = np.argmax(N_sq[Nx_i:Nx_mid], axis=1)
+    z_mix_rel_up = np.max(z[inds_max_up] - keel(h, l, x[Nx_i:Nx_mid]))
+    x_mix_rel_up = x[Nx_i+np.argmax(z[inds_max_up] - keel(h, l, x[Nx_i:Nx_mid]))]
+    #Downstream
+    inds_max_dn= np.argmax(N_sq[Nx_mid:Nx_f], axis=1)
+    z_mix_rel_dn = np.max(z[inds_max_dn] - keel(h, l, x[Nx_mid:Nx_f]))
+    x_mix_rel_dn = x[Nx_mid+np.argmax(z[inds_max_dn] - keel(h, l, x[Nx_mid:Nx_f]))]
+
+    return float(tot_mix_up), float(tot_mix_dn), float(tot_diff_up), float(tot_diff_dn), float(z_mix_up), float(z_mix_dn), float(N_star_sq_up), float(N_star_sq_down), float(z_mix_rel_up), float(z_mix_rel_dn)
             
 
 def create_jsons():
@@ -300,6 +311,8 @@ def create_jsons():
     phi_d_dn = {}
     Nstar_sq_up = {}
     Nstar_sq_dn = {}
+    z_mix_rel_up = {}
+    z_mix_rel_dn = {}
     for i in range(len(a_s)):
         for j in range(len(c_s)):
             K_up_temp = []
@@ -310,6 +323,8 @@ def create_jsons():
             phi_d_dn_temp = []
             Nstar_sq_up_temp = []
             Nstar_sq_dn_temp = []
+            z_mix_rel_up_temp = []
+            z_mix_rel_dn_temp = []
             time = []
             for k in range(70, times[j], 3): # Loop through all files
                 with h5py.File('new/data-mixingsim-{0}{1}-00/data-mixingsim-{0}{1}-00_s{2}.h5'.format(a_s[i], c_s[j], k), mode='r') as f:
@@ -323,6 +338,8 @@ def create_jsons():
                     z_mix_dn_temp.append(temp[5])
                     Nstar_sq_up_temp.append(temp[6])
                     Nstar_sq_dn_temp.append(temp[7])
+                    z_mix_rel_up_temp.append(temp[8])
+                    z_mix_rel_dn_temp.append(temp[9])
 		    # Compute average quantities
             K_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = (K_up_temp, time)
             K_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = (K_dn_temp, time)
@@ -332,6 +349,8 @@ def create_jsons():
             phi_d_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = (phi_d_dn_temp, time)
             Nstar_sq_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = (Nstar_sq_up_temp, time)
             Nstar_sq_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = (Nstar_sq_dn_temp, time)
+            z_mix_rel_up[conv_id[c_s[j]]+conv_id[a_s[i]]] = (z_mix_rel_up_temp, time)
+            z_mix_rel_dn[conv_id[c_s[j]]+conv_id[a_s[i]]] = (z_mix_rel_dn_temp, time)
             print(i,j)
 	# Store data in json formatted as dictionaries 
     json.dump(K_up, open('K_values_{0}-{1}.txt'.format(160, 600), 'w'))
@@ -342,6 +361,8 @@ def create_jsons():
     json.dump(phi_d_dn, open('phi_d_values_{0}-{1}.txt'.format(600, 920), 'w'))
     json.dump(Nstar_sq_up, open('Nstar_sq_values_{0}-{1}.txt'.format(160, 600), 'w'))
     json.dump(Nstar_sq_dn, open('Nstar_sq_values_{0}-{1}.txt'.format(600, 920), 'w'))
+    json.dump(z_mix_rel_up, open('z_mix_rel_{0}-{1}.txt'.format(160, 600), 'w'))
+    json.dump(z_mix_rel_dn, open('z_mix_rel_{0}-{1}.txt'.format(600, 920), 'w'))
 
 def generate_new_set():
 	# Generates diapycnal diffusivitiy and zmix json for upstream and downstream
@@ -351,10 +372,9 @@ def generate_new_set():
 
 # Run
 if __name__ == "__main__":
-	#generate_new_set()
 	#rho = json.load(open('F20H20_rho_220.txt')) # F20H20 (vortex shedding regime) at snapshot t=220t_0 (1280x640 2D array)
 	#rho = np.array(rho)[:, ::-1] # Reorder so rho[0][0] is top left of domain
     #with h5py.File('regime_files/data-mixingsim-a005c005-00_s180.h5', mode='r') as f:
     #    rho = f['tasks']['rho'][0]
-    #print(mixing_format(rho, 'a005'))
+    #print(mixing_format(rho, 'a200'))
     generate_new_set()
