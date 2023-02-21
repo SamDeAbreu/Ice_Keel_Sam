@@ -69,11 +69,11 @@ def find_mask(h, l, Nx, Nz, zv): # Mask out the keel based on cell height
     return keel_mask  # returns mask of which elements are within the keel
     
 def name_to_h(name,z0):
-    if name[-2::]=='05':
+    if name[1::]=='005':
         h = 0.5*z0
-    elif name[-2::]=='09':
+    elif name[1::]=='095':
         h = 0.95*z0
-    elif name[-2::]=='12':
+    elif name[1::]=='102':
         h = 1.2*z0
     else:
         h = 2.0*z0
@@ -222,10 +222,10 @@ def calc_mixing(rho,h,l,Nx,Nz,zv,Nx1,Nx2,dz,vol,upstream_flag,x,z,keel_mask):
     
     #Way 2: remove the largest 10 points
     dzdb_masked = np.ma.array(dzdb,mask=keel_mask[Nx1:Nx2,:])
-    dzdb_rem_outliers = reject_outliers2(dzdb_masked)
-
-    mixing = nabla_rho[Nx1:Nx2,:]*dzdb_rem_outliers
     
+    mixing = nabla_rho[Nx1:Nx2,:]*dzdb_masked
+    mixing_masked = np.ma.array(mixing,mask=keel_mask[Nx1:Nx2,:])
+    mixing = reject_outliers2(mixing_masked)
     
     return b, zs,  mixing, dzdb
 
@@ -295,7 +295,7 @@ def mixing_format(rho, ab):
     inds_max_dn= np.argmax(N_sq[Nx_mid:Nx_f], axis=1)
     z_mix_rel_dn = np.max(z[inds_max_dn] - keel(h, l, x[Nx_mid:Nx_f]))
     x_mix_rel_dn = x[Nx_mid+np.argmax(z[inds_max_dn] - keel(h, l, x[Nx_mid:Nx_f]))]
-
+    
     return float(tot_mix_up), float(tot_mix_dn), float(tot_diff_up), float(tot_diff_dn), float(z_mix_up), float(z_mix_dn), float(N_star_sq_up), float(N_star_sq_down), float(z_mix_rel_up), float(z_mix_rel_dn)
             
 
