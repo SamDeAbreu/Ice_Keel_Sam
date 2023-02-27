@@ -259,14 +259,14 @@ def K_p_upstream():
         for j in range(len(c)):
             plt.plot(c_axis[j], avgs[i]['K_p_U'][j]/mu, marker=markers1[i][j], linestyle='None', color=colors1[i], label=labels_height[i], ms=12)    
     plt.xlabel('Froude Number $Fr$')
-    plt.ylabel(r'Upstream Diapycnal Diffusivity $K_{{\rho}}^U/\mu$')
+    plt.ylabel(r'Upstream Diapycnal Diffusivity $K_U/\mu$')
     plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
     plt.grid()
-    plt.yscale('log', nonposy='clip')
+    plt.yscale('log')
     plt.ylim(plt.ylim()[0], 1e5)
     for i in range(len(a)):
         color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
-    for i in range(4):
+    for i in range(len(markers_labels_up)):
         marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='black', label=labels_regime_up[i]))
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::1], handles[::1]))
@@ -284,7 +284,7 @@ def K_p_downstream():
         for j in range(len(c)):
             plt.plot(c_axis[j], avgs[i]['K_p_D'][j]/mu, linestyle='None', marker=markers2[i][j], color=colors1[i], label=labels_height[i], ms=12)    
     plt.xlabel('Froude number $Fr$')
-    plt.ylabel(r'Downstream Diapycnal Diffusivity $K_{{\rho}}^D/\mu$')
+    plt.ylabel(r'Downstream Diapycnal Diffusivity $K_D/\mu$')
     plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
     plt.grid()
     plt.yscale('log')
@@ -292,7 +292,7 @@ def K_p_downstream():
     for i in range(len(a)):
         color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
     plt.plot([], [], marker='o', label=' ', color='white')
-    for i in range(5):
+    for i in range(len(markers_labels_down)):
         marker_lines.append(plt.plot([], [], marker=markers_labels_down[i], linestyle='None', color='black', label=labels_regime_down[i]))
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::1], handles[::1]))
@@ -419,11 +419,11 @@ def K_p_upstream_var3():
     plt.ylabel(r'Upstream Diapycnal Diffusivity $K_{{\rho}}^U/\mu$')
     plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
     plt.grid()
-    plt.yscale('log', nonposy='clip')
+    plt.yscale('log')
     plt.ylim(plt.ylim()[0], 1e5)
     for i in range(len(a)):
         color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height_Fr[i]))
-    for i in range(4):
+    for i in range(len(labels_regime_up)):
         marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='black', label=labels_regime_up[i]))
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::1], handles[::1]))
@@ -445,11 +445,11 @@ def K_p_downstream_var3():
     plt.ylabel(r'Upstream Diapycnal Diffusivity $K_{{\rho}}^U/\mu$')
     plt.xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
     plt.grid()
-    plt.yscale('log', nonposy='clip')
+    plt.yscale('log')
     plt.ylim(plt.ylim()[0], 1e5)
     for i in range(len(a)):
         color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height_Fr[i]))
-    for i in range(4):
+    for i in range(len(labels_regime_down)):
         marker_lines.append(plt.plot([], [], marker=markers_labels_down[i], linestyle='None', color='black', label=labels_regime_down[i]))
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::1], handles[::1]))
@@ -515,7 +515,7 @@ def K_p_downstream_var4():
 
 def K_p_subplots_4():
     #var4, both up and downstream
-    fig = plt.figure(figsize=(6.5,9.75))
+    fig = plt.figure(figsize=(7,9.75))
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     block_width, block_depth = 0.1, 0.1
     
@@ -1238,7 +1238,7 @@ def regime_graphic():
     plt.clf()  
 """
 plt.rcParams.update({'font.size':20})
-
+"""
 def zmix():
     #zmix/z0, separate plots upstream/downstream
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
@@ -1252,9 +1252,9 @@ def zmix():
     for i in range(len(a)):
          for j in range(len(c)):
              ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, avgs[i]['z_mix_U'][j]/8, color=colors2[markers1[i][j]], edgecolor='k', shade=True)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR', ms=11)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves', ms=11)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], mec='k', label='Supercritical', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], mec='k', label='LBR', ms=ms['D'])
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], mec='k', label='Solitary Waves', ms=ms['o'])
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], mec='k', label='Supercritical', ms=ms['P'])
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::-1], handles[::-1]))
     ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 18}, fancybox=True, shadow=True)
@@ -1280,9 +1280,9 @@ def zmix():
     for i in range(len(a)):
         for j in range(len(c)):
             ax.bar3d(c_axis[j], a_axis[i], 0, block_width, block_depth, avgs[i]['z_mix_D'][j]/z0, color=colors2[markers2[i][j]], edgecolor='k', shade=True)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['s'], mec='k', label='Lee Waves', ms=11)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['^'], mec='k', label='Quasi-laminar', ms=11)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['*'], mec='k', label='Vortex Shedding', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['s'], mec='k', label='Lee Waves', ms=ms['s'])
+    ax.plot([], [], marker='^', linestyle='None', color=colors2['^'], mec='k', label='Quasi-laminar', ms=ms['^'])
+    ax.plot([], [], marker='*', linestyle='None', color=colors2['*'], mec='k', label='Vortex Shedding', ms=ms['*'])
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::-1], handles[::-1]))
     ax.legend(by_label.values(), by_label.keys(), loc='upper right', prop={'size': 15}, fancybox=True, shadow=True)
@@ -1299,16 +1299,22 @@ def zmix():
     plt.tight_layout()
     figD.savefig('zmix_Downstream_figure.pdf', format='pdf')
     plt.clf()
+"""
+plt.rcParams.update({'font.size': 30})
 
 def zmix_var2():
     #zmix/z0, separate plots upstream/downstream, upside down
     a_axis = [0.5, 0.95, 1.2, 2.0] #eta
     block_width = 0.1
+    ms = {'o': 17.5, 'D': 15, 'P': 18, 's': 17, '^': 18, '*': 20.5}
 
-    figU = plt.figure(figsize=(10,8))
-    ax = figU.add_subplot(1, 1, 1, projection='3d')
-    roll = 180
-    ax.view_init(elev=12, azim=187, roll=roll)
+    fig = plt.figure(figsize=(11,20))
+
+#    figU = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(2, 1, 1, projection='3d')
+#    roll = 180
+#    ax.view_init(elev=12, azim=187, roll=roll)
+    ax.view_init(elev=12, azim=187)
 
     for i in range(len(a)):
         ax.bar3d(0.4, a_axis[i] - block_width/2, 0, 1.7, block_width, a_axis[i], color='deepskyblue', alpha=0.1, shade=True, edgecolor='k')
@@ -1320,31 +1326,34 @@ def zmix_var2():
             markerline.set_markersize(11)
             ax.scatter([c_axis[j]], [a_axis[i]], 0, color=colors2[markers1[i][j]])
             ax.scatter([c_axis[j]], [a_axis[i]], [a_axis[i]], color=colors2[markers1[i][j]])
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['D'], label='LBR', ms=11)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['o'], label='Solitary Waves', ms=11)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['P'], label='Supercritical', ms=11)
+    ax.plot([], [], marker='D', linestyle='None', color=colors2['D'], label='Stable Subcritical', ms=ms['D'])
+    ax.plot([], [], marker='o', linestyle='None', color=colors2['o'], label='Unstable Subcritical', ms=ms['o'])
+    ax.plot([], [], marker='P', linestyle='None', color=colors2['P'], label='Unstable Supercritical', ms=ms['P'])
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-    ax.legend(by_label.values(), by_label.keys(), loc='lower left', bbox_to_anchor=(0.2, 0.2), prop={'size': 18}, fancybox=True, shadow=True)
+    ax.legend(by_label.values(), by_label.keys(), loc='upper center', bbox_to_anchor=(0.5, 0.97), prop={'size': 18}, fancybox=True, shadow=True)
     ax.xaxis.set_rotate_label(False)
-    ax.set_xlabel('$Fr$', linespacing=3.2)
+    ax.set_xlabel('$Fr$', linespacing=3.2, labelpad=25)
     ax.set_xlim(0.4, 2.1)
     ax.set_xticks([1, 2])
     ax.yaxis.set_rotate_label(False)
-    ax.set_ylabel('$\\eta$', linespacing=3.2)
+    ax.set_ylabel('$\\eta$', linespacing=3.2, labelpad=25)
     ax.set_ylim(0.4, 2.1)
     ax.set_yticks([0.5, 1, 1.5, 2])
     ax.zaxis.set_rotate_label(False)
-    ax.set_zlabel('         $z_{mix}/z_0$')
+    ax.set_zlabel('$z_{mix}/z_0$', labelpad=25)
     ax.set_zlim(0, 4.2)
     ax.set_zticks([0, 1, 2, 3, 4])
-    plt.tight_layout()
-    figU.savefig('zmix_Upstream_var2.pdf', format='pdf')
-    plt.clf()
+    ax.invert_zaxis()
+    ax.set_title('(a)', loc='left')
+#    plt.tight_layout()
+#    figU.savefig('zmix_Upstream_var2.pdf', format='pdf', pad_inches=1)
+#    plt.clf()
 
-    figD = plt.figure(figsize=(10,8))
-    ax = figD.add_subplot(1, 1, 1, projection='3d')
-    ax.view_init(elev=12, azim=187, roll=roll)
+#    figD = plt.figure(figsize=(10,8))
+    ax = fig.add_subplot(2, 1, 2, projection='3d')
+#    ax.view_init(elev=12, azim=187, roll=roll)
+    ax.view_init(elev=12, azim=187)
 
     for i in range(len(a)):
         ax.bar3d(0.4, a_axis[i] - block_width/2, 0, 1.7, block_width, a_axis[i], color='deepskyblue', alpha=0.1, shade=True, edgecolor='k')
@@ -1356,37 +1365,129 @@ def zmix_var2():
             markerline.set_markersize(11)
             ax.scatter([c_axis[j]], [a_axis[i]], 0, color=colors2[markers2[i][j]])
             ax.scatter([c_axis[j]], [a_axis[i]], [a_axis[i]], color=colors2[markers2[i][j]])
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Lee Waves', ms=11)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['^'], label='Quasi-laminar', ms=11)
-    ax.plot([], [], marker='s', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=11)
+    ax.plot([], [], marker='s', linestyle='None', color=colors2['s'], label='Lee Waves', ms=ms['s'])
+    ax.plot([], [], marker='^', linestyle='None', color=colors2['^'], label='Fast-Laminar', ms=ms['^'])
+    ax.plot([], [], marker='*', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=ms['*'])
     handles, labels_temp = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels_temp[::-1], handles[::-1]))
-    ax.legend(by_label.values(), by_label.keys(), loc='lower left', bbox_to_anchor=(0.2, 0.2), prop={'size': 18}, fancybox=True, shadow=True)
+    ax.legend(by_label.values(), by_label.keys(), loc='upper center', bbox_to_anchor=(0.5, 0.97), prop={'size': 18}, fancybox=True, shadow=True)
     ax.xaxis.set_rotate_label(False)
-    ax.set_xlabel('$Fr$', linespacing=3.2)
+    ax.set_xlabel('$Fr$', linespacing=3.2, labelpad=25)
     ax.set_xlim(0.4, 2.1)
     ax.set_xticks([1, 2])
     ax.yaxis.set_rotate_label(False)
-    ax.set_ylabel('$\\eta$', linespacing=3.2)
+    ax.set_ylabel('$\\eta$', linespacing=3.2, labelpad=25)
     ax.set_ylim(0.4, 2.1)
     ax.set_yticks([0.5, 1, 1.5, 2])
     ax.zaxis.set_rotate_label(False)
-    ax.set_zlabel('         $z_{mix}/z_0$')
+    ax.set_zlabel('$z_{mix}/z_0$', labelpad=25)
     ax.set_zlim(0, 4.2)
     ax.set_zticks([0, 1, 2, 3, 4])
+    ax.invert_zaxis()
+    ax.set_title('(b)', loc='left')
+ 
     plt.tight_layout()
-    figD.savefig('zmix_Downstream_var2.pdf', format='pdf')
+    fig.savefig('zmix_subplots_var2.pdf', format='pdf')
+    plt.clf()
+"""
+def zmix_var3():
+    #zmix/z0, upstream and downstream, plotted against eta
+    a_axis = [0.5, 0.95, 1.2, 2.0]
+    color_lines = []
+    marker_lines = []
+
+    for i in range(len(a)):
+        for j in range(len(c)):
+            plt.plot(a_axis[i], avgs[i]['z_mix_U'][j]/8, marker=markers1[i][j], linestyle='None', color=colors1[j], label=labels_height_Fr[j], ms=12)
+    plt.xlabel('$\\eta$')
+    plt.ylabel('$z_{mix}/z_0$')
+    plt.grid()
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height_Fr[i]))
+    for i in range(len(markers_labels_up)):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='k', label=labels_regime_up[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, loc='upper left', ncol=2)
+    plt.title('Upstream')
+    plt.gcf().set_size_inches(8,6,forward=True)
+    plt.savefig('zmix_Upstream_var3.pdf', format='pdf', bbox_inches='tight')
     plt.clf()
 
+    color_lines = []
+    marker_lines = []
+
+    for i in range(len(a)):
+        for j in range(len(c)):
+            plt.plot(a_axis[i], avgs[i]['z_mix_D'][j]/8, marker=markers2[i][j], linestyle='None', color=colors1[j], label=labels_height_Fr[j], ms=12)
+    plt.xlabel('$\\eta$')
+    plt.ylabel('$z_{mix}/z_0$')
+    plt.grid()
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height_Fr[i]))
+    for i in range(len(markers_labels_down)):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_down[i], linestyle='None', color='k', label=labels_regime_down[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, loc='upper left', ncol=2)
+    plt.title('Downstream')
+    plt.gcf().set_size_inches(8,6,forward=True)
+    plt.savefig('zmix_Downstream_var3.pdf', format='pdf', bbox_inches='tight')
+    plt.clf()
+
+def zmix_var4():
+    #zmix/z0, upstream and downstream, plotted against Fr
+    color_lines = []
+    marker_lines = []
+
+    for i in range(len(a)):
+        for j in range(len(c)):
+            plt.plot(c_axis[j], avgs[i]['z_mix_U'][j]/8, marker=markers1[i][j], linestyle='None', color=colors1[i], label=labels_height[i], ms=12)
+    plt.xlabel('$Fr$')
+    plt.ylabel('$z_{mix}/z_0$')
+    plt.grid()
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+    for i in range(len(markers_labels_up)):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_up[i], linestyle='None', color='k', label=labels_regime_up[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, loc='upper left', ncols=2)
+    plt.title('Upstream')
+    plt.gcf().set_size_inches(8,6,forward=True)
+    plt.savefig('zmix_Upstream_var4.pdf', format='pdf', bbox_inches='tight')
+    plt.clf()
+
+    color_lines = []
+    marker_lines = []
+
+    for i in range(len(a)):
+        for j in range(len(c)):
+            plt.plot(c_axis[j], avgs[i]['z_mix_D'][j]/8, marker=markers2[i][j], linestyle='None', color=colors1[i], label=labels_height[i], ms=12)
+    plt.xlabel('$Fr$')
+    plt.ylabel('$z_{mix}/z_0$')
+    plt.grid()
+    for i in range(len(a)):
+        color_lines.append(plt.plot([], [], marker='X', linestyle='None', color=colors1[i], label=labels_height[i]))
+    for i in range(len(markers_labels_down)):
+        marker_lines.append(plt.plot([], [], marker=markers_labels_down[i], linestyle='None', color='k', label=labels_regime_down[i]))
+    handles, labels_temp = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels_temp[::1], handles[::1]))
+    plt.legend(by_label.values(), by_label.keys(), fancybox=True, shadow=True, loc='upper left', ncols=2)
+    plt.title('Downstream')
+    plt.gcf().set_size_inches(8,6,forward=True)
+    plt.savefig('zmix_Downstream_var4.pdf', format='pdf', bbox_inches='tight')
+    plt.clf()
+"""
 # RUN
-#K_p_upstream()
+K_p_upstream()
 #K_p_upstream_var1()
 #K_p_downstream_var1()
 #K_p_upstream_var2()
 #K_p_downstream_var2()
-#K_p_upstream_var3()
-#K_p_downstream_var3()
-#K_p_downstream()
+K_p_upstream_var3()
+K_p_downstream_var3()
+K_p_downstream()
 #test_heatmap()
 joint_regime()
 #joint_regime_arctic()
@@ -1398,6 +1499,5 @@ K_p_upstream_var4()
 #K_p_downstream_var5()
 #K_p_upstream_var5()
 K_p_subplots_4()
-zmix()
 zmix_var2()
 phi_d_upstream()
