@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from uncertainties import ufloat
 import seawater as sw
+plt.rcParams.update({'font.size':16})
+
 
 # Graphing constants
 a = ['a005', 'a095', 'a102', 'a200']
@@ -15,15 +17,15 @@ colors2 = {'D': 'darkgreen', '^': '#663300', 's': 'red', 'o': '#ff3399', 'P': 'd
 conv_id = {'a005': 'H05', 'a095': 'H09', 'a102': 'H12', 'a200': 'H20', 'c005': 'F05', 'c100': 'F10', 'c105': 'F15', 'c200': 'F20'}
 
 # Import mixing data
-K_import_up = json.load(open('K_values_{0}-{1}.txt'.format(160, 600)))
-K_import_down = json.load(open('K_values_{0}-{1}.txt'.format(600, 920)))
+Phi_d_import_up = json.load(open('Phi_d_values_{0}-{1}.txt'.format(160, 600)))
+Phi_d_import_down = json.load(open('Phi_d_values_{0}-{1}.txt'.format(600, 920)))
 avgs = [{}, {}, {}, {}]
 for i in range(len(a)):
-    avgs[i]['K_p_U'] = []
-    avgs[i]['K_p_D'] = []
+    avgs[i]['Phi_d_U'] = []
+    avgs[i]['Phi_d_D'] = []
     for j in range(len(c)):
-        avgs[i]['K_p_U'].append(np.mean(K_import_up[conv_id[c[j]]+conv_id[a[i]]][0][22:]))
-        avgs[i]['K_p_D'].append(np.mean(K_import_down[conv_id[c[j]]+conv_id[a[i]]][0][22:]))
+        avgs[i]['Phi_d_U'].append(np.mean(Phi_d_import_up[conv_id[c[j]]+conv_id[a[i]]][0][22:]))
+        avgs[i]['Phi_d_D'].append(np.mean(Phi_d_import_down[conv_id[c[j]]+conv_id[a[i]]][0][22:]))
 
 # Methods related to creating the figure:
 
@@ -135,19 +137,19 @@ def arctic_plot(h, color1, color2):
         # Plot marker boxes
         plt.plot(Fr_value, eta_value, marker='s', color=color1, ms=18, zorder=101+k, markeredgecolor='k')
         # Plot text in marker boxes
-        plt.text(Fr_value, eta_value-0.012, labels_region[region], fontsize=15, weight='bold', ha='center', va='center', zorder=101+k)
+        plt.text(Fr_value, eta_value-0.012, labels_region[region], fontsize=14, weight='bold', ha='center', va='center', zorder=101+k)
         k += 1
 
 def joint_regime_arctic():
     #Joint regime Arctic layout 
     shift = 0 # offset the marker for each point
-    max_up = np.log10(avgs[-1]['K_p_U'][-1]) # Scaling for marker size
-    max_down = np.log10(avgs[-1]['K_p_D'][-1]) # Scaling for marker size
+    scale = 8 # Scaling for marker size 
+    Phi_0 = avgs[0]['Phi_d_U'][0] # Normalize mixing values
     ms = {'o': 17.5, 'D': 15, 'P': 18, 's': 17, '^': 18, '*': 20.5, 'p':17}
     # Plot upstream markers
     for i in range(len(a)):
         for j in range(len(c)):
-            marker_size = np.exp(1.9*np.log10(avgs[i]['K_p_U'][j])/max_up) * 4.0 # Chosen through trial and error (feel free to change)
+            marker_size = (avgs[i]['Phi_d_U'][j]/Phi_0)**0.85 * scale # Chosen through trial and error (feel free to change)
             shift = (ms[markers1[i][j]]-13+12*marker_size)/6500
             plt.plot(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=ms[markers1[i][j]]-13+marker_size, zorder=10)    
     line2, = plt.plot([], [], marker='o', markeredgecolor='k', linestyle='None', color=colors2['o'], label='Unstable Subcritical', ms=ms['o'] * 0.75)
@@ -156,16 +158,17 @@ def joint_regime_arctic():
     # Plot downstream markers
     for i in range(len(a)):
         for j in range(len(c)):
-            marker_size = np.exp(1.9*np.log10(avgs[i]['K_p_D'][j])/max_down) * 4.0 # Chosen through trial and error (feel free to change)
+            marker_size = (avgs[i]['Phi_d_D'][j]/Phi_0)**0.85 * scale # Chosen through trial and error (feel free to change)
             shift = (ms[markers1[i][j]]-13+12*marker_size)/6500
             plt.plot(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=ms[markers2[i][j]]-13+marker_size, zorder=10)    
+    line11, = plt.plot([], [], marker='p', markeredgecolor='k', linestyle='None', color=colors2['p'], label='Diffusive BL', ms=ms['p'] * 0.75)
     line9, = plt.plot([], [], marker='s', markeredgecolor='k', linestyle='None', color=colors2['s'], label='Lee Waves', ms=ms['s'] * 0.75)
     line7, = plt.plot([], [], marker='^', markeredgecolor='k', linestyle='None', color=colors2['^'], label='Fast-Laminar', ms=ms['^'] * 0.75)
     line5, = plt.plot([], [], marker='*', markeredgecolor='k', linestyle='None', color=colors2['*'], label='Vortex Shedding', ms=ms['*'] * 0.75)
     # Plot legends
-    first_legend = plt.legend(handles=[line1, line2, line3], loc='lower center', bbox_to_anchor=(0.26, -0.37), prop={'size': 13}, fancybox=True, shadow=True)
+    first_legend = plt.legend(handles=[line1, line2, line3], loc='lower center', bbox_to_anchor=(0.26, -0.42), prop={'size': 13}, fancybox=True, shadow=True)
     plt.gca().add_artist(first_legend)
-    plt.legend(handles=[line5, line7, line9], loc='lower center', bbox_to_anchor=(0.75, -0.37), prop={'size': 13}, fancybox=True, shadow=True)
+    plt.legend(handles=[line5, line7, line9, line11], loc='lower center', bbox_to_anchor=(0.75, -0.475), prop={'size': 13}, fancybox=True, shadow=True)
     # Other plot details
     plt.xlim(0,2.2)
     plt.ylim(0,2.7)
@@ -173,13 +176,13 @@ def joint_regime_arctic():
     plt.ylabel('Dimensionless Keel Draft $\\eta$    ')
     plt.xticks([0.5, 1, 1.5, 2])
     plt.yticks([0.5, 1, 1.5, 2, 2.5])
-    plt.text(0.58, -0.39, 'Upstream', ha='center', va='center')
-    plt.text(1.66, -0.39, 'Downstream', ha='center', va='center')
+    plt.text(0.58, -0.49, 'Upstream', ha='center', va='center')
+    plt.text(1.66, -0.49, 'Downstream', ha='center', va='center')
     plt.grid(zorder=0)
 
     # Add Arctic region markers (the most importnat part)
     arctic_plot(h=7.45, color1='#b30000', color2='#b30000')
-    arctic_plot(h=7.45*2.5, color1='blue', color2='blue')
+    arctic_plot(h=7.45*2.5, color1='cyan', color2='cyan')
 
     plt.gcf().set_size_inches(8,6, forward=True)
     plt.savefig('regime_layout_regional.pdf', format='pdf', bbox_inches='tight')
