@@ -11,8 +11,8 @@ plt.rcParams.update({'font.size':16})
 a = ['a005', 'a095', 'a102', 'a200']
 c = ['c005', 'c100', 'c105', 'c200']
 c_axis = [0.5, 1.0, 1.5, 2]
-markers1 = [['D', 'D', 'o', 'P'], ['D', 'o', 'o', 'P'], ['D', 'o', 'o', 'P'], ['D', 'o', 'o', 'P']] #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
-markers2 = [['s', '^', '^', '*'], ['s', '^', '*', '*'], ['s', '^', '*', '*'], ['p', 'p', '*', '*']] #vortex shedding = star, bore & MSD = circle, blocking = square, bore & TD = triangle, MSD=diamond, lee = plus
+markers1 = [['D', 'D', 'o', 'P'], ['D', 'o', 'o', 'P'], ['D', 'o', 'o', 'P'], ['D', 'o', 'o', 'P']] 
+markers2 = [['s', '^', '^', '*'], ['s', '^', '*', '*'], ['s', '^', '*', '*'], ['p', 'p', '*', '*']] 
 colors2 = {'D': 'darkgreen', '^': '#663300', 's': 'red', 'o': '#ff3399', 'P': 'darkviolet', '*': '#fcb900', 'p': '#0066ff'}
 conv_id = {'a005': 'H05', 'a095': 'H09', 'a102': 'H12', 'a200': 'H20', 'c005': 'F05', 'c100': 'F10', 'c105': 'F15', 'c200': 'F20'}
 
@@ -27,17 +27,35 @@ for i in range(len(a)):
         avgs[i]['Phi_d_U'].append(np.mean(Phi_d_import_up[conv_id[c[j]]+conv_id[a[i]]][0][22:]))
         avgs[i]['Phi_d_D'].append(np.mean(Phi_d_import_down[conv_id[c[j]]+conv_id[a[i]]][0][22:]))
 
-# Methods related to creating the figure:
+# Methods for computing values related to the figures
 
 def Fr(z0, Si, Sf, U):
+        # Computes the Fr number (Si and Sf are the summer and winter ML salinities, respectively)
         dB = 9.8*(sw.dens0(Sf, -2) - sw.dens0(Si, -2))/sw.dens0(Si, -2)
         return U/np.sqrt(z0*dB)
+
 def eta(z0, h):
+    # Computes eta
     return h/z0
-def sigma_rho(S, S_sigma): # Error in EOS (found the exact equation for EOS and derived error formula for leading order terms, needs to be checked)
-    return S_sigma*np.sqrt((0.8)**2+9/4*(0.005)**2*S+4*(0.0004)**2*S**2)
+
+def EOS(t, S):
+    # EOS (see https://www.desmos.com/calculator/jcbb7korla)
+    # Needed to write out explicitly as sw.dens0 runs into errors when used with ufloat
+    a = [999.84, 6.79e-2, -9.09e-3, 1.001e-4, -1.12e-6, 6.54e-9]
+    b = [8.24e-1, -4.1e-3, 7.64e-5, -8.25e-7, 5.38e-9]
+    c = [-5.72e-3, 1.02e-4, -1.65e-6]
+    d = [4.83e-4]
+    p_w = a[0]+a[1]*t+a[2]*t**2+a[3]*t**3+a[4]*t**4+a[5]*t**5
+    return p_w + (b[0]+b[1]*t+b[2]*t**2+b[3]*t**3+b[4]*t**4)*S+(c[0]+c[1]*t+c[2]*t**2)*S**(3/2)+d[0]*S**2
+
+def sigma_rho(S, S_sigma):
+    # Computes the std_dev in density from a given salinity and salinity std_Dev
+    S_val = ufloat(S, S_sigma)
+    rho_val = EOS(-2, S_val)
+    return rho_val.std_dev
 
 def sigma_Fr(z0, Si, Sf, z0_sigma, Si_sigma, Sf_sigma, U):
+    # Computes the std_dev in the Fr number (assumed no U std_dev)
     rhoi_sigma = sigma_rho(Si, Si_sigma)
     rhof_sigma = sigma_rho(Sf, Sf_sigma)
     rhoi = ufloat(sw.dens0(Si, -2), rhoi_sigma)
@@ -47,11 +65,14 @@ def sigma_Fr(z0, Si, Sf, z0_sigma, Si_sigma, Sf_sigma, U):
     Fr = U/(z0u*dB)**0.5
     return Fr.std_dev
 
+# Methods for drawing the figures
+
 def arctic_plot(h, color1, color2):
-    # Set salinity and ML depth base values (with uncertainty)
+    # Plot a keel of height h on the arctic plot 
+    
+    # Set salinity and ML depth base values (with uncertainty which is the std_dev)
     # We organize the data into two categories: summer (denoted with i) and winter (f), each with uncertainties (u)
     # Summer corresponds to the July value for the particular region and April for winter
-    
     # Salinity values taken from Figure 8 in PFW (visually estimated, somewhat subjective)
     S_values = {'Chukchi Sea': {'Si': 29.1, 'Si_u': 1.00, 'Sf': 30.1, 'Sf_u': 0.1}, 
                 'Southern Beaufort Sea': {'Si': 28.0, 'Si_u': 3.8, 'Sf': 30.5, 'Sf_u': 2.5}, 
@@ -66,26 +87,32 @@ def arctic_plot(h, color1, color2):
                 'Eurasian Basin': {'z0': 22.3, 'z0_u': 11.3}, 
                 'Barents Sea': {'z0': 17.7, 'z0_u': 12.2}}
     
-    # Trends of salinity and MLD in units of [value] per year
+    # Trends of salinity, MLD, and wind speed in units of [value] per year
     # Taken from Figure 14 in PFW
     # Salinity trends are taken from the ice-covered (ic) column
     S_trends = {'Chukchi Sea': {'Si_t': 0.02, 'Sf_t': -0.07}, 
                 'Southern Beaufort Sea': {'Si_t': 0.29, 'Sf_t': -0.04}, 
                 'Canada Basin': {'Si_t': -0.11, 'Sf_t': -0.19}, 
                 'Eurasian Basin': {'Si_t': -0.05, 'Sf_t': -0.07}, 
-                'Barents Sea': {'Si_t': 0.02, 'Sf_t': 0.02,}} # Using summer trend for winter (due to missing trend in PFW)
+                'Barents Sea': {'Si_t': 0.02, 'Sf_t': 0,}} # Non significant trend in winter ML
     # MLD trends are taken from the ice-covered (ic) summer column
-    z0_trends = {'Chukchi Sea': {'z0_t': -0.43}, # Using Winter ic trend (due to missing trend in PFW)
+    z0_trends = {'Chukchi Sea': {'z0_t': 0}, # Non significant trend 
                 'Southern Beaufort Sea': {'z0_t': 0.33}, 
                 'Canada Basin': {'z0_t': -0.33}, 
                 'Eurasian Basin': {'z0_t': -0.19}, 
-                'Barents Sea': {'z0_t': 0.51}} # Using Summer ice-free trend (due to missing trend in PFW)
+                'Barents Sea': {'z0_t': 0}} # Non significant trend
+    # Wind trends are taken from ice_covered (ic) summer column
+    wind_trends = {'Chukchi Sea': {'u_t': 0.16},
+                   'Southern Beaufort Sea': {'u_t': 0.08},
+                   'Canada Basin': {'u_t': 0}, # Non significant trend
+                   'Eurasian Basin': {'u_t': 0}, # Non significant trend
+                   'Barents Sea': {'u_t': 0}} # Non significant trend
     
-    # All regions that have a trend not from ice-covered summer are marked with a (*)
-    labels_region = {'Chukchi Sea': '*1', 'Southern Beaufort Sea': '2', 'Canada Basin': '3', 'Eurasian Basin': '4', 'Barents Sea': '*5'}
+    # All regions that have a non significant trend are marked with a (*)
+    labels_region = {'Chukchi Sea': '*1', 'Southern Beaufort Sea': '2', 'Canada Basin': '*3', 'Eurasian Basin': '*4', 'Barents Sea': '*5'}
     regions = S_values.keys()
     
-    U = 0.2 # Ice speed (fixed for every region right now)
+    U = 0.2 # Ice speed (fixed for every region)
 
     # Compute (Fr, eta) values for each region
     Fr_values = {}
@@ -103,7 +130,7 @@ def arctic_plot(h, color1, color2):
     
     # Compute predicted (Fr, eta) values for each region. Note that the prediction is linear (only a rough first derivative is used)
     years = 5 # How many years into the future we predict
-    U_rate = 1.009 # Ice speed trend (increase of 0.9% per year from Rampal I think?)
+    #U_rate = 1.009 # Ice speed trend (increase of 0.9% per year from Rampal)
     Fr_pred_values = {}
     eta_pred_values = {}
     for region in regions:
@@ -111,7 +138,8 @@ def arctic_plot(h, color1, color2):
         z0_new = z0_values[region]['z0']+years*z0_trends[region]['z0_t']
         S_i_new = S_values[region]['Si']+years*S_trends[region]['Si_t']
         S_f_new = S_values[region]['Sf']+years*S_trends[region]['Sf_t']
-        U_new = U*U_rate**years
+        #U_new = U*U_rate**years
+        U_new = U + years*0.02*wind_trends[region]['u_t'] # Sea ice speed 2% of wind speed
 
         # Store data
         Fr_pred = Fr(z0_new, S_i_new, S_f_new, U_new)
@@ -131,9 +159,9 @@ def arctic_plot(h, color1, color2):
         eta_pred_value = eta_pred_values[region]
         
         # Plot error boxes
-        plt.gca().add_patch(patches.FancyBboxPatch(xy=(Fr_value-Fr_er, eta_value-eta_er), width=2*Fr_er, height=2*eta_er, linewidth=1, color=color2, fill='false', mutation_scale=0.05, alpha=0.10))
+        plt.gca().add_patch(patches.FancyBboxPatch(xy=(Fr_value-Fr_er, eta_value-eta_er), width=2*Fr_er, height=2*eta_er, linewidth=1, color=color2, fill='false', mutation_scale=0.05, alpha=0.13))
         # Plot predictive arrows
-        plt.arrow(x=Fr_value, y=eta_value, dx=Fr_pred_value-Fr_value, dy=eta_pred_value-eta_value, linestyle='-', linewidth=2.8, length_includes_head=True, zorder=98+k, head_width=0.03)
+        plt.arrow(x=Fr_value, y=eta_value, dx=Fr_pred_value-Fr_value, dy=eta_pred_value-eta_value, linestyle='-', linewidth=2.8, length_includes_head=True, zorder=98+k, head_width=0.03, head_length=0.03)
         # Plot marker boxes
         plt.plot(Fr_value, eta_value, marker='s', color=color1, ms=18, zorder=101+k, markeredgecolor='k')
         # Plot text in marker boxes
@@ -143,13 +171,14 @@ def arctic_plot(h, color1, color2):
 def joint_regime_arctic():
     #Joint regime Arctic layout 
     shift = 0 # offset the marker for each point
-    scale = 8 # Scaling for marker size 
+    scale = 12 # Scaling for marker size 
     Phi_0 = avgs[0]['Phi_d_U'][0] # Normalize mixing values
     ms = {'o': 17.5, 'D': 15, 'P': 18, 's': 17, '^': 18, '*': 20.5, 'p':17}
     # Plot upstream markers
     for i in range(len(a)):
         for j in range(len(c)):
-            marker_size = (avgs[i]['Phi_d_U'][j]/Phi_0)**0.85 * scale # Chosen through trial and error (feel free to change)
+            marker_size = avgs[i]['Phi_d_U'][j]/Phi_0 * scale # Chosen through trial and error (feel free to change)
+            #marker_size = 14
             shift = (ms[markers1[i][j]]-13+12*marker_size)/6500
             plt.plot(c_axis[j]-shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers1[i][j], color=colors2[markers1[i][j]], ms=ms[markers1[i][j]]-13+marker_size, zorder=10)    
     line2, = plt.plot([], [], marker='o', markeredgecolor='k', linestyle='None', color=colors2['o'], label='Unstable Subcritical', ms=ms['o'] * 0.75)
@@ -158,7 +187,8 @@ def joint_regime_arctic():
     # Plot downstream markers
     for i in range(len(a)):
         for j in range(len(c)):
-            marker_size = (avgs[i]['Phi_d_D'][j]/Phi_0)**0.85 * scale # Chosen through trial and error (feel free to change)
+            marker_size = avgs[i]['Phi_d_D'][j]/Phi_0 * scale # Chosen through trial and error (feel free to change)
+            #marker_size = 14
             shift = (ms[markers1[i][j]]-13+12*marker_size)/6500
             plt.plot(c_axis[j]+shift, [0.5, 0.95, 1.2, 2][i], markeredgecolor='k', linestyle='None', marker=markers2[i][j], color=colors2[markers2[i][j]], ms=ms[markers2[i][j]]-13+marker_size, zorder=10)    
     line11, = plt.plot([], [], marker='p', markeredgecolor='k', linestyle='None', color=colors2['p'], label='Diffusive BL', ms=ms['p'] * 0.75)
@@ -181,7 +211,7 @@ def joint_regime_arctic():
     plt.grid(zorder=0)
 
     # Add Arctic region markers (the most importnat part)
-    arctic_plot(h=7.45, color1='#b30000', color2='#b30000')
+    arctic_plot(h=7.45, color1='#e59866', color2='#e59866')
     arctic_plot(h=7.45*2.5, color1='cyan', color2='cyan')
 
     plt.gcf().set_size_inches(8,6, forward=True)
