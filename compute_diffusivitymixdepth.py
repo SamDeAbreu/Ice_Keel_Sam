@@ -241,7 +241,7 @@ def find_rhostar(rho, Nx1, Nx2, keel_mask):
 
 def mixing_format(rho, ab):
     rho = np.array(rho)[:, ::-1]
-    h = name_to_h(ab,z0) #conv(ab)*z0
+    h = name_to_h(ab,z0) 
     keel_mask = find_mask(h, l, Nx, Nz, zv)
     
     #Calculate upstream
@@ -278,12 +278,6 @@ def mixing_format(rho, ab):
     z_mix_up = z[ind_up]
     ind_dn = np.argwhere(np.cumsum(np.sum(mixing_dn_ma, axis=0)) > 0.95*np.sum(mixing_dn_ma))[0][0]
     z_mix_dn = z[ind_dn]
-   
-    """ #z_mix_rel
-    inds_up = np.argwhere(mixing_up_ma > 2*(rho2-rho1)/z0).ravel()
-    z_mix_rel_up = np.max(z[inds_up[1::2]] - keel(h, l, x[inds_up[::2]]))
-    inds_max_up = np.argmax(inds_up)
-    x_mix_up = x[inds_up[2*inds_max_up]] """
 
     #z_mix_rel N^2 version
     N_sq = np.gradient(rho, axis=1)
@@ -372,9 +366,4 @@ def generate_new_set():
 
 # Run
 if __name__ == "__main__":
-	#rho = json.load(open('F20H20_rho_220.txt')) # F20H20 (vortex shedding regime) at snapshot t=220t_0 (1280x640 2D array)
-	#rho = np.array(rho)[:, ::-1] # Reorder so rho[0][0] is top left of domain
-    #with h5py.File('regime_files/data-mixingsim-a005c005-00_s180.h5', mode='r') as f:
-    #    rho = f['tasks']['rho'][0]
-    #print(mixing_format(rho, 'a200'))
     generate_new_set()

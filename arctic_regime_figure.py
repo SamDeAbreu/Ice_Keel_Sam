@@ -1,3 +1,7 @@
+"""
+Performs all calculations for all region (Fr, eta) predictions and generates Figure 9.
+Author: Sam De Abreu (2023)
+"""
 import json
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,7 +43,7 @@ def eta(z0, h):
     return h/z0
 
 def EOS(t, S):
-    # EOS (see https://www.desmos.com/calculator/jcbb7korla)
+    # EOS (see https://www.desmos.com/calculator/emvyrt6rmc)
     # Needed to write out explicitly as sw.dens0 runs into errors when used with ufloat
     a = [999.84, 6.79e-2, -9.09e-3, 1.001e-4, -1.12e-6, 6.54e-9]
     b = [8.24e-1, -4.1e-3, 7.64e-5, -8.25e-7, 5.38e-9]
@@ -129,17 +133,18 @@ def arctic_plot(h, color1, color2):
         eta_values[region] = (eta_val, eta_er) # (eta, eta_error)
     
     # Compute predicted (Fr, eta) values for each region. Note that the prediction is linear (only a rough first derivative is used)
-    years = 5 # How many years into the future we predict
+    years = {'Chukchi Sea': 5, 'Southern Beaufort Sea': 5, 'Canada Basin': 15, 'Eurasian Basin': 15, 'Barents Sea': 15} # How many years into the future we predict
+    ls = {'Chukchi Sea': '-', 'Southern Beaufort Sea': '-', 'Canada Basin': (0,(5,3)), 'Eurasian Basin': (0,(5,3)), 'Barents Sea': (0,(5,3))}
     #U_rate = 1.009 # Ice speed trend (increase of 0.9% per year from Rampal)
     Fr_pred_values = {}
     eta_pred_values = {}
     for region in regions:
         # Compute new predicted values with trends
-        z0_new = z0_values[region]['z0']+years*z0_trends[region]['z0_t']
-        S_i_new = S_values[region]['Si']+years*S_trends[region]['Si_t']
-        S_f_new = S_values[region]['Sf']+years*S_trends[region]['Sf_t']
+        z0_new = z0_values[region]['z0']+years[region]*z0_trends[region]['z0_t']
+        S_i_new = S_values[region]['Si']+years[region]*S_trends[region]['Si_t']
+        S_f_new = S_values[region]['Sf']+years[region]*S_trends[region]['Sf_t']
         #U_new = U*U_rate**years
-        U_new = U + years*0.02*wind_trends[region]['u_t'] # Sea ice speed 2% of wind speed
+        U_new = U + years[region]*0.02*wind_trends[region]['u_t'] # Sea ice speed 2% of wind speed
 
         # Store data
         Fr_pred = Fr(z0_new, S_i_new, S_f_new, U_new)
@@ -157,11 +162,15 @@ def arctic_plot(h, color1, color2):
         eta_er = eta_values[region][1]
         Fr_pred_value = Fr_pred_values[region]
         eta_pred_value = eta_pred_values[region]
-        
+        print(h, region, (eta_pred_value - eta_value)/(years[region]))
         # Plot error boxes
         plt.gca().add_patch(patches.FancyBboxPatch(xy=(Fr_value-Fr_er, eta_value-eta_er), width=2*Fr_er, height=2*eta_er, linewidth=1, color=color2, fill='false', mutation_scale=0.05, alpha=0.13))
         # Plot predictive arrows
-        plt.arrow(x=Fr_value, y=eta_value, dx=Fr_pred_value-Fr_value, dy=eta_pred_value-eta_value, linestyle='-', linewidth=2.8, length_includes_head=True, zorder=98+k, head_width=0.03, head_length=0.03)
+        if region == 'Canada Basin' and h == 7.45*2.5:
+            plt.arrow(x=Fr_value, y=eta_value, dx=Fr_pred_value-Fr_value, dy=eta_pred_value-eta_value, linestyle='--', linewidth=2.8, length_includes_head=True, zorder=98+k, head_width=0.03, head_length=0.03)
+        else:
+            plt.annotate('', xy=(Fr_pred_value+0.02, eta_pred_value), xytext=(Fr_value, eta_value), arrowprops = dict(arrowstyle="->", color='k', linewidth=2.8, ls=ls[region]), zorder=98+k)
+        #plt.arrow(x=Fr_value, y=eta_value, dx=Fr_pred_value-Fr_value, dy=eta_pred_value-eta_value, linestyle='-', linewidth=2.8, length_includes_head=True, zorder=98+k, head_width=0.03, head_length=0.03)
         # Plot marker boxes
         plt.plot(Fr_value, eta_value, marker='s', color=color1, ms=18, zorder=101+k, markeredgecolor='k')
         # Plot text in marker boxes
