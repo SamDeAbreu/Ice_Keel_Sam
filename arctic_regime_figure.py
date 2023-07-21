@@ -5,8 +5,6 @@ Author: Sam De Abreu (2023)
 
 BSD 3-Clause License
 
-Copyright (c) 2023, SamDeAbreu
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 
